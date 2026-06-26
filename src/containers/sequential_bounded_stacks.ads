@@ -1,0 +1,167 @@
+--
+--  Copyright (C) 2026 Patrick Rogers
+--
+--  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+--
+--  Author: Patrick Rogers, progers@classwide.com
+
+--  This generic package provides a bounded stack abstraction.
+
+--  See the "Controlling Runtime Checks" section of README.md regarding whether
+--  to disable preconditions. In general you should not disable precondition
+--  checks at runtime (if present).
+
+generic
+
+   type Element is private;
+   --  The type of values contained by objects of type Stack
+
+package Sequential_Bounded_Stacks with
+  SPARK_Mode,
+  Always_Terminates
+is
+
+   subtype Element_Count is Integer range 0 .. Integer'Last - 1;
+   --  The number of Element values currently contained
+   --  within any given stack. The lower bound is zero
+   --  because a stack can be empty. We limit the upper
+   --  bound (minimally) to preclude overflow issues.
+
+   subtype Physical_Capacity is Element_Count range 1 .. Element_Count'Last;
+   --  The range of values that any given stack object can
+   --  specify (via the discriminant) for the number of
+   --  Element values the object can physically contain.
+   --  Must be at least one.
+
+   type Stack (Capacity : Physical_Capacity) is private
+      with Default_Initial_Condition => Empty (Stack);
+
+   procedure Push (This : in out Stack;  Item : Element) with
+     Pre  => not Full (This),
+     Post => not Empty (This)                      and then
+             Top_Element (This) = Item             and then
+             Extent (This) = Extent (This'Old) + 1 and then
+             Unchanged (This'Old, Within => This),
+     Global => null;
+
+   procedure Pop (This : in out Stack;  Item : out Element) with
+     Pre  => not Empty (This),
+     Post => not Full (This)                       and then
+             Item = Top_Element (This'Old)         and then
+             Extent (This) = Extent (This'Old) - 1 and then
+             Unchanged (This, Within => This'Old),
+     Global => null;
+
+   function Top_Element (This : Stack) return Element with
+     Pre => not Empty (This),
+     Global => null,
+     Inline;
+   --  Returns the value of the Element at the "top" of This
+   --  stack, i.e., the most recent Element pushed. Does not
+   --  remove that Element or alter the state of This stack
+   --  in any way.
+
+   overriding function "=" (Left, Right : Stack) return Boolean with
+     Post => "="'Result = (Extent (Left) = Extent (Right) and then
+             Unchanged (Left, Right)),
+     Global => null;
+
+   procedure Copy (Destination : in out Stack; Source : Stack) with
+     Pre  => Destination.Capacity >= Extent (Source),
+     Post => Destination = Source,
+     Global => null;
+   --  An alternative to predefined assignment, in that it
+   --  does not copy all the array values unless necessary. It
+   --  only copies the slice "logically" contained, so is more
+   --  efficient when Source is not full.
+
+   function Extent (This : Stack) return Element_Count with
+     Global => null,
+     Inline;
+   --  Returns the number of Element values currently
+   --  contained within This stack.
+
+   function Empty (This : Stack) return Boolean with
+     Post => Empty'Result = (Extent (This) = 0),
+     Global => null,
+     Inline;
+
+   function Full (This : Stack) return Boolean with
+     Post => Full'Result = (Extent (This) = This.Capacity),
+     Global => null,
+     Inline;
+
+   procedure Reset (This : in out Stack) with
+     Post => Empty (This),
+     Global => null;
+
+   function Unchanged (Invariant_Part, Within : Stack) return Boolean
+     with Ghost;
+   --  Returns whether the Element values of Invariant_Part
+   --  are unchanged in the stack Within, e.g., that inserting
+   --  or removing an Element value does not change the other
+   --  Element values held.
+
+private
+
+   type Content is array (Physical_Capacity range <>) of Element
+     with Relaxed_Initialization;
+
+   type Stack (Capacity : Physical_Capacity) is record
+      Values : Content (1 .. Capacity);
+      Top    : Element_Count := 0;
+   end record with
+     Type_Invariant =>
+        Top <= Capacity and then
+        (for all K in 1 .. Top => Values (K)'Initialized);
+   pragma Annotate (GNATProve,
+                    False_Positive,
+                    "type ""Stack"" is not fully initialized",
+                    "bug in gnatprove from combination of Default_Initial_Condition and relaxed init");
+
+   ------------
+   -- Extent --
+   ------------
+
+   function Extent (This : Stack) return Element_Count is
+     (This.Top);
+
+   -----------
+   -- Empty --
+   -----------
+
+   function Empty (This : Stack) return Boolean is
+     (This.Top = 0);
+
+   ----------
+   -- Full --
+   ----------
+
+   function Full (This : Stack) return Boolean is
+     (This.Top = This.Capacity);
+
+   -----------------
+   -- Top_Element --
+   -----------------
+
+   function Top_Element (This : Stack) return Element is
+     (This.Values (This.Top));
+
+   ---------
+   -- "=" --
+   ---------
+
+   overriding function "=" (Left, Right : Stack) return Boolean is
+     (Left.Top = Right.Top and then
+      Left.Values (1 .. Left.Top) = Right.Values (1 .. Right.Top));
+
+   ---------------
+   -- Unchanged --
+   ---------------
+
+   function Unchanged (Invariant_Part, Within : Stack) return Boolean is
+     (Invariant_Part.Top <= Within.Top and then
+        (for all K in 1 .. Invariant_Part.Top =>
+            Within.Values (K) = Invariant_Part.Values (K)));
+
+end Sequential_Bounded_Stacks;

@@ -1,0 +1,63 @@
+--  This project file is used for proving the components in the Proven
+--  Components library, rather than clients using one or more of the
+--  components in client code.
+
+with "proven_components.gpr";
+with "sparklib";
+
+project Proven_Components_Proof is
+
+   type Main_Procedures is
+      ("demo_math_utilities",
+       "demo_time_stamp",
+       "demo_float_images",
+       "demo_fixed_images",
+       "demo_bounded_seq",
+       "demo_sets",
+       "demo_sorts",
+       "demo_queues",
+       "demo_buffers",
+       "demo_stacks",
+       "demo_kalman_filters");
+
+   Main_Subprogram : Main_Procedures := external ("MAIN", "demo_buffers");
+
+   for Main use (Main_Subprogram);
+
+   for Exec_Dir use ".";
+
+   for Source_Dirs use ("proof/src/**");
+
+   for Object_Dir use "proof/obj";
+
+   package Compiler is
+      for Default_Switches ("Ada") use (
+         "-gnatwa",    -- enable additional warnings
+         "-gnatwJ",    -- don't complain about parens in aggregates!
+         "-g",         -- enable debugging info
+         "-O0",
+         "-gnatf",     -- full errors
+         "-gnateDSPARK_BODY_MODE=" & SPARKLIB.SPARK_Body_Mode,  -- always leave this Off!
+         "-gnat2022"); -- required for compatibility with sparklib
+   end Compiler;
+
+   package Builder is
+      for Default_Switches ("Ada") use (
+         "-g",   -- enable debugging info
+         "-k");  -- compile all sources to find as many errors as possible in a single run
+   end Builder;
+
+   package Pretty_Printer is
+      for Switches ("Ada") use ("-nM", "--no-separate-loop-then", "-M120");
+   end Pretty_Printer;
+
+   package Clean is
+      for Artifacts_In_Object_Dir use ("*.*");
+   end Clean;
+   
+   package Prove is
+      for Proof_Switches ("Ada") use ("--level=2");
+   end Prove;
+
+end Proven_Components_Proof;
+

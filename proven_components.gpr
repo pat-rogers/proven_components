@@ -1,0 +1,37 @@
+--  This project file is for clients of the Proven Components library, that is,
+--  when using one or more of the components in client code.
+
+with "sparklib";
+
+project Proven_Components is
+
+   for Source_Dirs use ("src/**");
+
+   for Object_Dir use "obj";
+
+   package Compiler is
+      --  Note that "-gnata" is NOT included. Use the pragma Assertion_Policy on the
+      --  generic instantiations to control the code generated for these checks.
+      for Default_Switches ("Ada") use (
+         "-gnatwa",    -- enable additional warnings
+         "-gnatwe",    -- treat warnings as errors
+         "-gnatwJ",    -- DON'T COMPLAIN ABOUT PARENS IN AGGREGATES!
+         "-gnatf",     -- full errors
+         "-O2",        -- "full" optimization (-O3 is "aggressive" optimization)
+         "-gnatn",     -- enable inlining across units
+         "-ffunction-sections",
+         "-fdata-sections",
+         "-gnateDSPARK_BODY_MODE=" & SPARKLIB.SPARK_Body_Mode,
+         "-gnat2022"); -- required for compatibility with sparklib anyway
+   end Compiler;
+
+   package Pretty_Printer is
+      for Switches ("Ada") use ("-nM", "--no-separate-loop-then", "-M120");
+   end Pretty_Printer;
+
+   package Clean is
+      for Artifacts_In_Object_Dir use ("*.*");
+   end Clean;
+
+end Proven_Components;
+
