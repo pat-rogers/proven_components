@@ -1,0 +1,21 @@
+name = "proven_components"
+version = "1.0.0"
+description = "Reusable components formally proven to the highest possible levels."
+licenses = "Apache-2.0 WITH LLVM-exception"
+authors = ["Pat Rogers"]
+maintainers = ["Pat Rogers <progers@classwide.com>"]
+maintainers-logins = [
+"pat-rogers",
+]
+website = "https://github.com/pat-rogers/proven_components"
+project-files = [
+"proven_components.gpr",
+]
+tags = [
+"reuse",
+"components",
+"spark",
+"proof",
+]
+[[depends-on]]
+sparklib = "^15.1.0"
