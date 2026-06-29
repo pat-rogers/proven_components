@@ -54,9 +54,9 @@ project Proven_Components_Proof is
    package Clean is
       for Artifacts_In_Object_Dir use ("*.*");
    end Clean;
-   
+
    package Prove is
-      for Proof_Switches ("Ada") use ("--level=2");
+      for Proof_Switches ("Ada") use ("--level=2", "--no-inlining");
    end Prove;
 
 end Proven_Components_Proof;
