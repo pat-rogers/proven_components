@@ -38,6 +38,8 @@
 --  to disable preconditions. In general you should not disable precondition
 --  checks at runtime (if present).
 
+pragma Assertion_Policy (loop_Invariant => Ignore);
+
 generic
 
    type Element is private;
