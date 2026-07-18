@@ -5,7 +5,7 @@
 --
 --  Author: Patrick Rogers, progers@classwide.com
 
---  This package defines an amateur-level Kalman This abstract data
+--  This package defines an amateur-level Kalman abstract data
 --  type for linear systems, suitable for hobbyists.
 
 --  see http://greg.czerniak.info/guides/kalman1/
