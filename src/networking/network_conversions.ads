@@ -6,7 +6,9 @@
 --  Author: Patrick Rogers, progers@classwide.com
 
 --  This package provides standard network::host value conversions for 16- and
---  32-bit unsigned types
+--  32-bit unsigned types. These conversions byte-swap only on a little-endian
+--  host; on a big-endian host the value is already in network (big-endian)
+--  order, so the conversion is the identity.
 
 with Interfaces; use Interfaces;
 

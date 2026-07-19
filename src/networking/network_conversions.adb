@@ -10,9 +10,6 @@ with System; use System;
 package body Network_Conversions with SPARK_Mode is
 
    Host_Is_Little_Endian : constant Boolean := System.Default_Bit_Order = System.Low_Order_First;
-   --  These conversions byte-swap only on a little-endian host; on a
-   --  big-endian host the value is already in network (big-endian) order,
-   --  so the conversion is the identity.
 
    ----------------
    -- To_Network --
@@ -31,7 +28,9 @@ package body Network_Conversions with SPARK_Mode is
    ----------------
 
    function To_Network (Value : Unsigned_16) return Unsigned_16 is
-     (if Host_Is_Little_Endian then Rotate_Left (Value, 8) else Value);
+     (if Host_Is_Little_Endian then
+         Rotate_Left (Value, 8)
+      else Value);
 
    -------------
    -- To_Host --
@@ -50,6 +49,8 @@ package body Network_Conversions with SPARK_Mode is
    -------------
 
    function To_Host (Value : Unsigned_16) return Unsigned_16 is
-     (if Host_Is_Little_Endian then Rotate_Left (Value, 8) else Value);
+     (if Host_Is_Little_Endian then
+         Rotate_Left (Value, 8)
+      else Value);
 
 end Network_Conversions;
