@@ -7,7 +7,9 @@
 
 with Ada.Dynamic_Priorities;     use Ada.Dynamic_Priorities;
 
-package body Blocking is
+package body Blocking with
+  SPARK_Mode => Off
+is
 
    ------------------------
    -- Counting_Semaphore --
@@ -241,24 +243,6 @@ package body Blocking is
 
    end Pulsed_Signal;
 
-   ----------------
-   -- Initialize --
-   ----------------
-
-   overriding procedure Initialize (This : in out Scope_Lock) is
-   begin
-      This.Lock.Acquire;
-   end Initialize;
-
-   --------------
-   -- Finalize --
-   --------------
-
-   overriding procedure Finalize (This : in out Scope_Lock) is
-   begin
-      This.Lock.Release;
-   end Finalize;
-
    --------------------------------
    -- Readers_Writers_Controller --
    --------------------------------
@@ -292,5 +276,25 @@ package body Blocking is
       end Stop_Writing;
 
    end Readers_Writers_Controller;
+
+   ------  Scope_Lock operations -----
+
+   ----------------
+   -- Initialize --
+   ----------------
+
+   overriding procedure Initialize (This : in out Scope_Lock) is
+   begin
+      This.Lock.Acquire;
+   end Initialize;
+
+   --------------
+   -- Finalize --
+   --------------
+
+   overriding procedure Finalize (This : in out Scope_Lock) is
+   begin
+      This.Lock.Release;
+   end Finalize;
 
 end Blocking;

@@ -5,19 +5,39 @@
 --
 --  Author: Patrick Rogers, progers@classwide.com
 
---  This package provides mechanisms for concurrent programming. Most are not in
---  the SPARK subset so SPARK_Mode is left in Auto mode.
+--  This package provides mechanisms implementing tasking synchronization
+--  protocols to be applied to application (client caller) tasks. That
+--  protocol might be mutual exclusion, but can be anything.
+--
+--  Specifically, objects of these types block caller tasks until the
+--  synchronization protocol allows them to return from the call, thereby
+--  allowing them to resume execution only when consistent with the protocol.
+--  (We are using the term "block" loosely here, meaning the caller task is
+--  not allowed to return from the call. This blocking is distinct from the
+--  potentially blocking operations prohibited by the language.)
+
+--  Note that protected declarations in this package are protected types,
+--  rather than protected objects, because the facilities they provide are
+--  application-independent. The mutex facility is a good example: only the
+--  application developer knows how many sections of code will require mutually
+--  exclusive access, i.e., how many mutex objects will be required.
+
+--  All but the most trivial of the protected types and declarations are not in
+--  the SPARK subset, and the package has disallowed dependencies, so SPARK_Mode
+--  is Off rather than Auto.
 
 with Ada.Finalization;
 with Ada.Task_Identification; use Ada.Task_Identification;
 with System;
 
-package Blocking is
+package Blocking with
+  SPARK_Mode => Off
+is
 
    Protocol_Error : exception;
    --  Raised when client tasks do not follow the protocol required by the
-   --  given blocking abstraction. For example, if the abstraction requires
-   --  that the task that acquired a lock be the task that releases it.
+   --  given blocking abstraction. For example, it is raised if the abstraction
+   --  requires that the task that acquired a lock be the task that releases it.
 
    ------------------------------  Signals  -----------------------------------
 
@@ -46,8 +66,7 @@ package Blocking is
 
    ----------------------------  Semaphores  ----------------------------------
 
-   --  A basic counting semaphore for concurrent programming without regard to
-   --  priorities.
+   --  A basic counting semaphore for concurrent programming.
 
    protected type Counting_Semaphore (Initial_Count : Natural) is
       entry Acquire;
@@ -56,8 +75,7 @@ package Blocking is
       Count : Natural := Initial_Count;
    end Counting_Semaphore;
 
-   --  A basic binary semaphore for concurrent programming without regard to
-   --  priorities.
+   --  A basic binary semaphore for concurrent programming.
 
    protected type Binary_Semaphore (Initially_Available : Boolean) is
       entry Acquire;
@@ -68,7 +86,7 @@ package Blocking is
 
    ------------------------------  Mutexes  -----------------------------------
 
-   --  A basic mutex for concurrent programming without regard to priorities.
+   --  A basic mutex for concurrent programming.
 
    protected type Mutex is
       entry Acquire;
@@ -151,6 +169,8 @@ package Blocking is
    --  declared outside of the declarative part in which the Scope_Lock object
    --  is located.
    --
+   --  See https://www.adacore.com/blog/gem-70 for a detailed explanation.
+   --
    --  For example:
    --
    --       S : Binary_Semaphore;
@@ -176,8 +196,8 @@ package Blocking is
 
    protected type Readers_Writers_Controller is
       entry Request_Reading;
-      procedure Stop_Reading;
       entry Request_Writing;
+      procedure Stop_Reading;
       procedure Stop_Writing;
    private
       entry Start_Writing;
@@ -187,11 +207,10 @@ package Blocking is
 
    -------------------------------  Events  -----------------------------------
 
-   --  The states an application task can specify for the Event type below.
-   type Event_States is (Up, Down);
-
    --  A type providing "events" that tasks can set (and clear and toggle),
    --  and await.
+
+   type Event_States is (Up, Down);
 
    protected type Event (Initial_State : Event_States := Down) is
       procedure Set    with Post => State = Up;
