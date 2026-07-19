@@ -7,7 +7,7 @@
 
 --  This package provides mechanisms implementing tasking synchronization
 --  protocols to be applied to application (client caller) tasks. That
---  protocol might be mutual exclusion, but can be anything.
+--  protocol might be mutual exclusion, but can be much more.
 --
 --  Specifically, objects of these types block caller tasks until the
 --  synchronization protocol allows them to return from the call, thereby
@@ -30,7 +30,7 @@ with Ada.Finalization;
 with Ada.Task_Identification; use Ada.Task_Identification;
 with System;
 
-package Blocking with
+package Synchronization_Mechanisms with
   SPARK_Mode => Off
 is
 
@@ -232,4 +232,4 @@ private
    overriding procedure Initialize (This : in out Scope_Lock);
    overriding procedure Finalize (This : in out Scope_Lock);
 
-end Blocking;
+end Synchronization_Mechanisms;

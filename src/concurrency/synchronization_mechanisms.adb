@@ -7,7 +7,7 @@
 
 with Ada.Dynamic_Priorities;     use Ada.Dynamic_Priorities;
 
-package body Blocking with
+package body Synchronization_Mechanisms with
   SPARK_Mode => Off
 is
 
@@ -297,4 +297,4 @@ is
       This.Lock.Release;
    end Finalize;
 
-end Blocking;
+end Synchronization_Mechanisms;
