@@ -11,16 +11,12 @@
 --  Unlike the language-defined generators, the result is not uniform but is
 --  shaped by those weights; a category with zero weight is never returned.
 
-with Ada.Finalization;
 with Ada.Streams;
 with Ada.Numerics.Float_Random;
 
 generic
    type Category is (<>);
-package Categorical_Distribution with
-   SPARK_Mode,
-   Always_Terminates
-is
+package Categorical_Distribution with SPARK_Mode => Off is
 
    pragma Unevaluated_Use_Of_Old (Allow);
 
@@ -38,8 +34,6 @@ is
              (for all V in Category =>
                 (if V /= Item then
                    Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
-   --  The total changes by Value less the weight Item previously had.
-   --  The weight for Item is now Value.
    --  Set a single weight for a single category. Individual weights can be zero.
 
    type Relative_Weights is array (Category) of Weight;
@@ -60,7 +54,6 @@ is
    --  Returns the sum of the current weights defined for this generator.
 
    function Random (This : in out Generator) return Category with
-     Side_Effects,
      Pre  => Total_Weight (This) > 0,
      Post => Current_Weights (This) = Current_Weights (This)'Old and then
              Total_Weight (This) = Total_Weight (This)'Old;
@@ -73,8 +66,10 @@ is
 
    procedure Reset (This : in out Generator) with
      Post => Current_Weights (This) = Current_Weights (This)'Old;
-   --  Resets the internal mechanism for generating random values.
-   --  Weights are not changed.
+   --  Resets the internal mechanism for generating random values (RNG). Note
+   --  that the seed is the Calendar, unlike the automatic initialization for
+   --  the RNG, so doing a Reset will change the sequence generated (whereas
+   --  without a reset the sequence is deterministic).
 
    procedure Read
      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
@@ -92,15 +87,10 @@ is
 
 private
 
-   pragma SPARK_Mode (Off);
-
-   type Generator is new Ada.Finalization.Limited_Controlled with record
+   type Generator is tagged limited record
       FRG          : Ada.Numerics.Float_Random.Generator;
       Weights      : Relative_Weights;
       Total_Weight : Weight := 0;
    end record;
-
-   overriding
-   procedure Initialize (This : in out Generator) renames Reset;
 
 end Categorical_Distribution;

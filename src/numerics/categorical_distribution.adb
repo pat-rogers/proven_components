@@ -15,7 +15,7 @@ package body Categorical_Distribution is
 
    procedure Reset (This : in out Generator) is
    begin
-      Reset (This.FRG);
+      Ada.Numerics.Float_Random.Reset (This.FRG);
    end Reset;
 
    -----------------
@@ -123,7 +123,7 @@ package body Categorical_Distribution is
    begin
       Relative_Weights'Read (Stream, This.Weights);
       This.Total_Weight := Sum (This.Weights);
-      Reset (This.FRG);
+      --  the RNG component auto-initializes
    end Read;
 
    -----------
