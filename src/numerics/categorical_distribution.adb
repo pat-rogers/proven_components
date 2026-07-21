@@ -61,25 +61,35 @@ package body Categorical_Distribution is
    ------------
 
    function Random (This : in out Generator) return Category is
-      subtype Indexes is Integer range 0 .. Integer (This.Total_Weight) - 1;
-      --  we use a zero-based array index because 0.0 is a possible value
+      subtype Array_Indexes is Integer range 0 .. Integer (This.Total_Weight) - 1;
+      --  We use a zero-based array index because 0.0 is a possible value
       --  for the random number generator and we are using that to compute
       --  index values.
 
-      Weighted_Values : array (Indexes) of Category;
-      Index           : Integer range Weighted_Values'First .. Weighted_Values'Last + 1;
-      Random_Number   : Float;
+      Weighted_Values : array (Array_Indexes) of Category;
+
+      subtype Counting_Index is Integer range Array_Indexes'First .. Array_Indexes'Last + 1;
+      --  The range is that of Weighted_Values except for 1 additional value.
+      --  The loop drives the value 1 past the last valid array index but is
+      --  never used as an actual index with that value.
+
+      Next           : Counting_Index;
+      Weighted_Index : Natural;
+      --  The index we actually use for the function result. Weighted_Index is
+      --  not of subtype Array_Indexes because we may calculate a value outside
+      --  the range (hence the clamping).
+      Scaled_Random  : Long_Float;
    begin
       --  For every possible Value V, assign V to a computed number of array
       --  components in Weighted_Values based on the relative weight assigned
       --  to V. The greater the weight assigned to V the greater the number of
       --  components are assigned V. Some of those weights may be zero so some
       --  Values may not be represented in the array components.
-      Index := Weighted_Values'First;
+      Next := Weighted_Values'First;
       for V in Category loop
          for K in 1 .. This.Weights (V) loop
-            Weighted_Values (Index) := V;
-            Index := Index + 1;
+            Weighted_Values (Next) := V;
+            Next := Next + 1;
          end loop;
       end loop;
       --  Now we have sequences of Values in Weighted_Values, where the
@@ -88,15 +98,18 @@ package body Categorical_Distribution is
       --  component Value at that index.
 
       --  Generate a random number in the closed interval [0.0, 1.0] and scale
-      --  it by the number of possible indexes into Weighted_Values.
-      Random_Number := Random (This.FRG) * Float (This.Total_Weight);
-      --  Convert to an actual Index
-      Index := Indexes (Float'Floor (Random_Number));
-      if Index > Weighted_Values'Last then --  Random (This.FRG) returned exactly 1.0
-         Index := Weighted_Values'Last;
+      --  it by the number of possible indexes into Weighted_Values. Long_Float
+      --  is used so that every Total_Weight value (up to Natural'Last) is exactly
+      --  representable, keeping the conversion below within Natural's range.
+      Scaled_Random := Long_Float (Random (This.FRG)) * Long_Float (This.Total_Weight);
+
+      --  Convert to a possible Index
+      Weighted_Index := Natural (Long_Float'Floor (Scaled_Random));
+      if Weighted_Index > Weighted_Values'Last then --  Random (This.FRG) returned exactly 1.0
+         Weighted_Index := Weighted_Values'Last;
       end if;
 
-      return Weighted_Values (Index);
+      return Weighted_Values (Weighted_Index);
    end Random;
 
    ---------

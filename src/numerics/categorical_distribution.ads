@@ -57,12 +57,20 @@ package Categorical_Distribution with SPARK_Mode => Off is
      Pre  => Total_Weight (This) > 0,
      Post => Current_Weights (This) = Current_Weights (This)'Old and then
              Total_Weight (This) = Total_Weight (This)'Old;
-   --  Returns a randomly determined category of type Category. The likelihood of a
-   --  given category being returned is based on the weight assigned to that category,
-   --  relative to all the other categories' weights. Requires either Set_Weight or
-   --  Set_Weights to have been called previously, with at least one weight a
-   --  non-zero value such that the total is non-zero at the time of the call
-   --  to Random.
+   --  Returns a randomly determined category of type Category. The likelihood
+   --  of a given category being returned is based on the weight assigned to
+   --  that category, relative to all the other categories' weights. Requires
+   --  either Set_Weight or Set_Weights to have been called previously, with at
+   --  least one weight a non-zero value such that the total is non-zero at the
+   --  time of the call to Random.
+   --
+   --  Implementation note: the body declares a local array of Category values
+   --  whose number of components is Sum (This.Current_Weights). Consequently,
+   --  it consumes stack space proportional to Total_Weight (This). A very large
+   --  total could raise Storage_Error; use relative weight values accordingly.
+   --
+   --  The body also assumes Total_Weight (This) <= Natural'Last (which holds so
+   --  long as Sum did not overflow when the weights were set).
 
    procedure Reset (This : in out Generator) with
      Post => Current_Weights (This) = Current_Weights (This)'Old;
