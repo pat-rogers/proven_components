@@ -18,7 +18,8 @@ project Proven_Components_Proof is
        "demo_queues",
        "demo_buffers",
        "demo_stacks",
-       "demo_kalman_filters");
+       "demo_kalman_filters",
+       "categorical_distribution_tests");
 
    Main_Subprogram : Main_Procedures := external ("MAIN", "demo_buffers");
 
@@ -55,9 +56,9 @@ project Proven_Components_Proof is
       for Artifacts_In_Object_Dir use ("*.*");
    end Clean;
 
-   package Prove is
-      for Proof_Switches ("Ada") use ("--level=2", "--no-inlining");
-   end Prove;
+   --  package Prove is
+   --     for Proof_Switches ("Ada") use ("--level=2", "--no-inlining");
+   --  end Prove;
 
 end Proven_Components_Proof;
 
