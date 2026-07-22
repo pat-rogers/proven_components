@@ -19,7 +19,9 @@ project Proven_Components_Proof is
        "demo_buffers",
        "demo_stacks",
        "demo_kalman_filters",
-       "categorical_distribution_tests");
+       "categorical_distribution_tests",
+       "uniform_distribution_tests",
+       "normal_distribution_tests");
 
    Main_Subprogram : Main_Procedures := external ("MAIN", "demo_buffers");
 

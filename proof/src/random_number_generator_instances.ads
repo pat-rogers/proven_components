@@ -12,7 +12,8 @@ pragma Assertion_Policy (Pre               => Check,
                          Dynamic_Predicate => Check);
 
 with Ada.Numerics.Generic_Elementary_Functions;
-with Random_Number_Generators; use Random_Number_Generators;
+with Uniform_Distribution; use Uniform_Distribution;
+with Normal_Distribution;  use Normal_Distribution;
 
 package Random_Number_Generator_Instances
   with SPARK_Mode
