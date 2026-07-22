@@ -97,7 +97,7 @@ private
 
    type Generator is tagged limited record
       FRG          : Ada.Numerics.Float_Random.Generator;
-      Weights      : Relative_Weights;
+      Weights      : Relative_Weights := (others => 0);
       Total_Weight : Weight := 0;
    end record;
 
