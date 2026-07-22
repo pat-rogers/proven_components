@@ -59,12 +59,15 @@ package body Time_Stamps with SPARK_Mode is
       Result             : Time_Stamp_Image := Initial_Image;
       The_Seconds        : Ada.Calendar.Day_Duration;
    begin
+      pragma Warnings (Off, "no Global contract");
+      pragma Warnings (Off, "no Always_Terminates aspect");
       Ada.Calendar.Split
         (Date,
          Year    => Current_Year,
          Month   => Current_Month,
          Day     => Current_Day,
          Seconds => The_Seconds);
+      pragma Warnings (On);
 
       Secs_Past_Midnight := Ticks (The_Seconds);
 
