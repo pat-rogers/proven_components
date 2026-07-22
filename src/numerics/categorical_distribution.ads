@@ -15,8 +15,10 @@
 --  Float_Random generator as a parameter, so the Generator holds only the
 --  weights and is an ordinary SPARK object. The weight management and the
 --  selection kernel (Selected_Category) are analyzed and proved; only Random
---  itself, which samples the generator, and the stream attributes have
---  SPARK_Mode set to Off.
+--  itself, which samples the generator, has SPARK_Mode set to Off, together
+--  with the Generator stream attributes, which are overridden to transfer
+--  the whole generator in a single block operation (see AdaCore Gem #39 at
+--  https://www.adacore.com/blog/gem-39).
 
 with Ada.Streams;
 with Ada.Numerics.Float_Random;
@@ -110,14 +112,18 @@ package Categorical_Distribution with SPARK_Mode is
 
    procedure Read
      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
-      This   : out Generator);
+      This   : out Generator)
+   with SPARK_Mode => Off;
 
    procedure Write
      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
-      This   : in Generator);
+      This   : Generator)
+   with SPARK_Mode => Off;
 
    for Generator'Read  use Read;
    for Generator'Write use Write;
+   --  Override the default component-by-component streaming with a single block
+   --  transfer of the whole generator.
 
 private
 
