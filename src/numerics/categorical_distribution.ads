@@ -31,7 +31,7 @@ package Categorical_Distribution with SPARK_Mode is
 
    pragma Unevaluated_Use_Of_Old (Allow);
 
-   type Generator is private;
+   type Generator is tagged private;
 
    type Weight is new Natural;
 
@@ -75,7 +75,7 @@ package Categorical_Distribution with SPARK_Mode is
    --  that the total is non-zero at the time of the call.
 
    procedure Set_Weight (This : in out Generator;  Item : Category;  Value : Weight) with
-     Pre  => Total_In_Range ((Current_Weights (This) with delta Item => Value)),
+     Pre'Class => Total_In_Range ((Current_Weights (This) with delta Item => Value)),
      Post => Current_Weights (This) (Item) = Value and then
              (for all V in Category =>
                 (if V /= Item then Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
@@ -83,7 +83,7 @@ package Categorical_Distribution with SPARK_Mode is
    --  The precondition requires the resulting total to remain representable.
 
    procedure Set_Weights (This : out Generator;  Values : Relative_Weights) with
-     Pre  => Total_In_Range (Values),
+     Pre'Class => Total_In_Range (Values),
      Post => Current_Weights (This) = Values and then
              Total_Weight (This) = Sum (Values);
    --  Sets all the relative weights for This. Individual weights can be zero.
@@ -127,9 +127,9 @@ package Categorical_Distribution with SPARK_Mode is
 
 private
 
-   type Generator is record
+   type Generator is tagged record
       Weights : Relative_Weights := (others => 0);
    end record with
-      Type_Invariant => Total_In_Range (Generator.Weights);
+      Ghost_Predicate => Total_In_Range (Generator.Weights);
 
 end Categorical_Distribution;
