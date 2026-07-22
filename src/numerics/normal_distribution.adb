@@ -5,26 +5,21 @@
 --
 --  Author: Patrick Rogers, progers@classwide.com
 
-package body Random_Number_Generators with SPARK_Mode is
+package body Normal_Distribution with SPARK_Mode is
 
    ---------------------
-   -- Scaled_To_Range --
+   -- Gaussian_Random --
    ---------------------
 
-   function Scaled_To_Range
-     (Value : Real;
-      Lower : Real;
-      Upper : Real)
-      return Real
-   is
-      Clamped : constant Real := Real'Min (Real'Max (Value, 0.0), 1.0);
-      Span    : constant Real := Upper - Lower;
-      Raw     : constant Real := Lower + Span * Clamped;
+   function Gaussian_Random (Mu, Sigma : Real) return Real is
+      function Deviate is new Gaussian_Deviate (Real, Real_Elementary_Functions);
    begin
-      --  Clamp into Lower .. Upper: IEEE rounding may otherwise leave Raw a
-      --  fraction outside the interval.
-      return Real'Min (Real'Max (Raw, Lower), Upper);
-   end Scaled_To_Range;
+      return Deviate
+               (Real (Ada.Numerics.Float_Random.Random (RNG)),
+                Real (Ada.Numerics.Float_Random.Random (RNG)),
+                Mu,
+                Sigma);
+   end Gaussian_Random;
 
    ----------------------
    -- Gaussian_Deviate --
@@ -67,28 +62,4 @@ package body Random_Number_Generators with SPARK_Mode is
       return Mu + Sigma * Deviate;
    end Gaussian_Deviate;
 
-   ---------------------------
-   -- Scaled_Uniform_Random --
-   ---------------------------
-
-   function Scaled_Uniform_Random (Lower, Upper : Real) return Real is
-      function Scaled is new Scaled_To_Range (Real);
-   begin
-      return Scaled (Real (Ada.Numerics.Float_Random.Random (RNG)), Lower, Upper);
-   end Scaled_Uniform_Random;
-
-   ---------------------
-   -- Gaussian_Random --
-   ---------------------
-
-   function Gaussian_Random (Mu, Sigma : Real) return Real is
-      function Deviate is new Gaussian_Deviate (Real, Real_Elementary_Functions);
-   begin
-      return Deviate
-               (Real (Ada.Numerics.Float_Random.Random (RNG)),
-                Real (Ada.Numerics.Float_Random.Random (RNG)),
-                Mu,
-                Sigma);
-   end Gaussian_Random;
-
-end Random_Number_Generators;
+end Normal_Distribution;
