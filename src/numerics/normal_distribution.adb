@@ -44,7 +44,7 @@ package body Normal_Distribution with SPARK_Mode is
       U2 : constant Real := Real'Min (Real'Max (Uniform_2, 0.0), 1.0);
       --  U2 in 0.0 .. 1.0
 
-      Log_U1 : constant Real := Real'Min (Real'Max (Log (U1, 10.0), -Max_Log), 0.0);
+      Log_U1 : constant Real := Real'Min (Real'Max (Log (U1), -Max_Log), 0.0);
       --  Log_U1 in -Max_Log .. 0.0
 
       Radicand : constant Real := -2.0 * Log_U1;
