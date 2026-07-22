@@ -9,8 +9,9 @@
 --  instantiates the generic for a small enumeration type and exercises each
 --  public operation, reporting a PASS/FAIL line per check and a final summary.
 
-with Ada.Text_IO;      use Ada.Text_IO;
-with Ada.Streams;      use Ada.Streams;
+with Ada.Text_IO;               use Ada.Text_IO;
+with Ada.Streams;               use Ada.Streams;
+with Ada.Numerics.Float_Random;
 with Categorical_Distribution;
 
 procedure Categorical_Distribution_Tests is
@@ -19,6 +20,10 @@ procedure Categorical_Distribution_Tests is
 
    package Color_Random is new Categorical_Distribution (Category => Color);
    use Color_Random;
+
+   RNG : Ada.Numerics.Float_Random.Generator;
+   --  Source of samples for Random. Left unseeded so the sequence, and hence
+   --  this test, is reproducible from run to run.
 
    Checks_Run    : Natural := 0;
    Checks_Failed : Natural := 0;
@@ -62,9 +67,6 @@ procedure Categorical_Distribution_Tests is
 
    procedure Test_Random_Distribution;
    --  Over many samples, observed frequencies approximate the weights.
-
-   procedure Test_Reset_Preserves_Weights;
-   --  Reset changes the random mechanism but leaves the weights intact.
 
    procedure Test_Stream_Roundtrip;
    --  Writing then reading a Generator restores its weights and total.
@@ -128,9 +130,9 @@ procedure Categorical_Distribution_Tests is
       G       : Generator;
       Desired : constant Relative_Weights := (Red => 1, Green => 2, Blue => 7, Yellow => 0);
    begin
-      G.Set_Weights (Desired);
+      Set_Weights (G, Desired);
       Check ("Set_Weights then Current_Weights returns the same weights",
-             G.Current_Weights = Desired);
+             Current_Weights (G) = Desired);
    end Test_Set_Weights_Roundtrip;
 
    ----------------------------
@@ -140,14 +142,14 @@ procedure Categorical_Distribution_Tests is
    procedure Test_Set_Weight_Single is
       G : Generator;
    begin
-      G.Set_Weights (Values => (Red => 1, Green => 2, Blue => 3, Yellow => 4));
-      G.Set_Weight (Blue, Value => 9);
+      Set_Weights (G, Values => (Red => 1, Green => 2, Blue => 3, Yellow => 4));
+      Set_Weight (G, Blue, Value => 9);
       Check ("Set_Weight updates the targeted value",
-             G.Current_Weights (Blue) = 9);
+             Current_Weights (G) (Blue) = 9);
       Check ("Set_Weight leaves the other values unchanged",
-             G.Current_Weights (Red) = 1 and then
-             G.Current_Weights (Green) = 2 and then
-             G.Current_Weights (Yellow) = 4);
+             Current_Weights (G) (Red) = 1 and then
+             Current_Weights (G) (Green) = 2 and then
+             Current_Weights (G) (Yellow) = 4);
    end Test_Set_Weight_Single;
 
    -----------------------
@@ -157,12 +159,12 @@ procedure Categorical_Distribution_Tests is
    procedure Test_Total_Weight is
       G : Generator;
    begin
-      G.Set_Weights (Values => (Red => 1, Green => 2, Blue => 7, Yellow => 0));
+      Set_Weights (G, Values => (Red => 1, Green => 2, Blue => 7, Yellow => 0));
       Check ("Total_Weight equals the sum of the individual weights",
-             G.Total_Weight = 10);
-      G.Set_Weight (Yellow, Value => 5);
+             Total_Weight (G) = 10);
+      Set_Weight (G, Yellow, Value => 5);
       Check ("Total_Weight reflects an updated single weight",
-             G.Total_Weight = 15);
+             Total_Weight (G) = 15);
    end Test_Total_Weight;
 
    ------------------------------------
@@ -175,16 +177,16 @@ procedure Categorical_Distribution_Tests is
       Sampled  : Color;
       Violated : Boolean := False;
    begin
-      G.Set_Weights (Weights);
+      Set_Weights (G, Weights);
       for Trial in 1 .. 100_000 loop
-         Sampled := G.Random;
+         Sampled := Random (G, RNG);
          if Sampled = Green or else Sampled = Yellow then
             Violated := True;
          end if;
       end loop;
       Check ("Random never returns a zero-weight value", not Violated);
       Check ("Random leaves the weights unchanged",
-             G.Current_Weights = Weights);
+             Current_Weights (G) = Weights);
    end Test_Random_Respects_Zero_Weights;
 
    ---------------------------------
@@ -198,10 +200,10 @@ procedure Categorical_Distribution_Tests is
       Weights   : constant Relative_Weights := (Red => 1, Green => 2, Blue => 7, Yellow => 0);
       Counts    : array (Color) of Natural := (others => 0);
    begin
-      G.Set_Weights (Weights);
+      Set_Weights (G, Weights);
       for Trial in 1 .. Samples loop
          declare
-            Sampled : constant Color := G.Random;
+            Sampled : constant Color := Random (G, RNG);
          begin
             Counts (Sampled) := Counts (Sampled) + 1;
          end;
@@ -209,7 +211,7 @@ procedure Categorical_Distribution_Tests is
 
       for C in Color loop
          declare
-            Expected : constant Float := Float (Weights (C)) / Float (G.Total_Weight);
+            Expected : constant Float := Float (Weights (C)) / Float (Total_Weight (G));
             Observed : constant Float := Float (Counts (C)) / Float (Samples);
          begin
             Check ("Observed frequency of " & C'Image & " is within tolerance of its weight",
@@ -222,23 +224,6 @@ procedure Categorical_Distribution_Tests is
              Counts (Green) > Counts (Red));
    end Test_Random_Distribution;
 
-   ----------------------------------
-   -- Test_Reset_Preserves_Weights --
-   ----------------------------------
-
-   procedure Test_Reset_Preserves_Weights is
-      G      : Generator;
-      Before : Relative_Weights;
-   begin
-      G.Set_Weights (Values => (Red => 4, Green => 3, Blue => 2, Yellow => 1));
-      Before := G.Current_Weights;
-      G.Reset;
-      Check ("Reset preserves the current weights",
-             G.Current_Weights = Before);
-      Check ("Reset preserves the total weight",
-             G.Total_Weight = 10);
-   end Test_Reset_Preserves_Weights;
-
    --------------------------
    -- Test_Stream_Roundtrip --
    --------------------------
@@ -248,13 +233,13 @@ procedure Categorical_Distribution_Tests is
       Original : Generator;
       Restored : Generator;
    begin
-      Original.Set_Weights (Values => (Red => 6, Green => 0, Blue => 4, Yellow => 2));
+      Set_Weights (Original, Values => (Red => 6, Green => 0, Blue => 4, Yellow => 2));
       Generator'Write (Stream'Access, Original);
       Generator'Read (Stream'Access, Restored);
       Check ("Stream roundtrip restores the weights",
-             Restored.Current_Weights = Original.Current_Weights);
+             Current_Weights (Restored) = Current_Weights (Original));
       Check ("Stream roundtrip restores the total weight",
-             Restored.Total_Weight = Original.Total_Weight);
+             Total_Weight (Restored) = Total_Weight (Original));
    end Test_Stream_Roundtrip;
 
 begin
@@ -266,7 +251,6 @@ begin
    Test_Total_Weight;
    Test_Random_Respects_Zero_Weights;
    Test_Random_Distribution;
-   Test_Reset_Preserves_Weights;
    Test_Stream_Roundtrip;
 
    New_Line;

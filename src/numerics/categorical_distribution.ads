@@ -5,45 +5,87 @@
 --
 --  Author: Patrick Rogers, progers@classwide.com
 
---  This package provides a generator for a categorical distribution: a random
---  value of the discrete formal type Category, drawn with a likelihood
+--  This package provides a generator for a categorical distribution: a
+--  random value of the discrete formal type Category, drawn with a likelihood
 --  proportional to a relative weight assigned to each category by the user.
 --  Unlike the language-defined generators, the result is not uniform but is
 --  shaped by those weights; a category with zero weight is never returned.
+--
+--  The RNG is not stored in the distribution. The function Random takes an
+--  Float_Random generator as a parameter, so the Generator holds only the
+--  weights and is an ordinary SPARK object. The weight management and the
+--  selection kernel (Selected_Category) are analyzed and proved; only Random
+--  itself, which samples the generator, and the stream attributes have
+--  SPARK_Mode set to Off.
 
 with Ada.Streams;
 with Ada.Numerics.Float_Random;
+with Ada.Numerics.Big_Numbers.Big_Integers;
+use  Ada.Numerics.Big_Numbers.Big_Integers;
 
 generic
    type Category is (<>);
-package Categorical_Distribution with SPARK_Mode => Off is
+package Categorical_Distribution with SPARK_Mode is
 
    pragma Unevaluated_Use_Of_Old (Allow);
 
-   type Generator is tagged limited private;
+   type Generator is private;
 
    type Weight is new Natural;
-
-   procedure Set_Weight
-     (This  : in out Generator;
-      Item  : Category;
-      Value : Weight)
-   with
-     Post => Current_Weights (This) (Item) = Value and then
-             Total_Weight (This) = Total_Weight (This)'Old + (Value - Current_Weights (This)'Old (Item)) and then
-             (for all V in Category =>
-                (if V /= Item then
-                   Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
-   --  Set a single weight for a single category. Individual weights can be zero.
 
    type Relative_Weights is array (Category) of Weight;
    --  Each component is a relative weight for the corresponding index category,
    --  to be used when computing the random result.
 
-   procedure Set_Weights (This : in out Generator;  Values : Relative_Weights) with
+   package Weight_Conversions is new Signed_Conversions (Int => Weight);
+   use Weight_Conversions;
+
+   function Mass_From (Weights : Relative_Weights;  From : Category) return Big_Integer is
+     (if From = Category'Last
+      then To_Big_Integer (Weights (Category'Last))
+      else To_Big_Integer (Weights (From)) + Mass_From (Weights, Category'Succ (From)))
+   with
+     Ghost,
+     Subprogram_Variant => (Increases => Category'Pos (From));
+   --  The total weight of Weights (From) .. Weights (Category'Last), as a
+   --  Big_Integer so the total is expressed without any risk of overflow.
+
+   function Total_In_Range (Weights : Relative_Weights) return Boolean is
+     (Mass_From (Weights, Category'First) <= To_Big_Integer (Weight'Last))
+   with Ghost;
+   --  True when the sum of all the weights is representable as a Weight. Every
+   --  Generator maintains this as a type invariant, so its total never
+   --  overflows.
+
+   function Random
+     (This   : Generator;
+      Source : in out Ada.Numerics.Float_Random.Generator)
+      return Category
+   with
+     Side_Effects,
+     SPARK_Mode => Off,
+     Pre => Total_Weight (This) > 0;
+   --  Returns a randomly determined category of type Category. The likelihood
+   --  of a given category being returned is based on the weight assigned to
+   --  that category, relative to all the other categories' weights. The sample
+   --  is drawn from Source. Requires either Set_Weight or Set_Weights to have
+   --  been called previously, with at least one weight a non-zero value such
+   --  that the total is non-zero at the time of the call.
+
+   procedure Set_Weight (This : in out Generator;  Item : Category;  Value : Weight) with
+     Pre  => Total_In_Range ((Current_Weights (This) with delta Item => Value)),
+     Post => Current_Weights (This) (Item) = Value and then
+             (for all V in Category =>
+                (if V /= Item then Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
+   --  Set a single weight for a single category. Individual weights can be zero.
+   --  The precondition requires the resulting total to remain representable.
+
+   procedure Set_Weights (This : out Generator;  Values : Relative_Weights) with
+     Pre  => Total_In_Range (Values),
      Post => Current_Weights (This) = Values and then
              Total_Weight (This) = Sum (Values);
    --  Sets all the relative weights for This. Individual weights can be zero.
+   --  The precondition requires the total of Values to be representable.
 
    function Current_Weights (This : Generator) return Relative_Weights;
    --  Returns the current values for the relative weights assigned to This
@@ -53,31 +95,18 @@ package Categorical_Distribution with SPARK_Mode => Off is
      Post => Total_Weight'Result = Sum (Current_Weights (This));
    --  Returns the sum of the current weights defined for this generator.
 
-   function Random (This : in out Generator) return Category with
-     Pre  => Total_Weight (This) > 0,
-     Post => Current_Weights (This) = Current_Weights (This)'Old and then
-             Total_Weight (This) = Total_Weight (This)'Old;
-   --  Returns a randomly determined category of type Category. The likelihood
-   --  of a given category being returned is based on the weight assigned to
-   --  that category, relative to all the other categories' weights. Requires
-   --  either Set_Weight or Set_Weights to have been called previously, with at
-   --  least one weight a non-zero value such that the total is non-zero at the
-   --  time of the call to Random.
-   --
-   --  Implementation note: the body declares a local array of Category values
-   --  whose number of components is Sum (This.Current_Weights). Consequently,
-   --  it consumes stack space proportional to Total_Weight (This). A very large
-   --  total could raise Storage_Error; use relative weight values accordingly.
-   --
-   --  The body also assumes Total_Weight (This) <= Natural'Last (which holds so
-   --  long as Sum did not overflow when the weights were set).
+   function Sum (Weights : Relative_Weights) return Weight with
+     Pre  => Total_In_Range (Weights),
+     Post => To_Big_Integer (Sum'Result) = Mass_From (Weights, Category'First);
+   --  Computes the sum of the weights.
 
-   procedure Reset (This : in out Generator) with
-     Post => Current_Weights (This) = Current_Weights (This)'Old;
-   --  Resets the internal mechanism for generating random values (RNG). Note
-   --  that the seed is the Calendar, unlike the automatic initialization for
-   --  the RNG, so doing a Reset will change the sequence generated (whereas
-   --  without a reset the sequence is deterministic).
+   function Selected_Category (Weights : Relative_Weights;  Index : Weight) return Category with
+     Pre  => To_Big_Integer (Index) < Mass_From (Weights, Category'First),
+     Post => Weights (Selected_Category'Result) > 0;
+   --  The proven selection kernel: returns the category whose cumulative-weight
+   --  bucket contains Index. The precondition requires Index to lie below the
+   --  total weight; the result is guaranteed to have a positive weight, so a
+   --  zero-weight category is never returned.
 
    procedure Read
      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
@@ -90,15 +119,11 @@ package Categorical_Distribution with SPARK_Mode => Off is
    for Generator'Read  use Read;
    for Generator'Write use Write;
 
-   function Sum (This : Relative_Weights) return Weight;
-   --  Computes the sum of the weights.
-
 private
 
-   type Generator is tagged limited record
-      FRG          : Ada.Numerics.Float_Random.Generator;
-      Weights      : Relative_Weights := (others => 0);
-      Total_Weight : Weight := 0;
-   end record;
+   type Generator is record
+      Weights : Relative_Weights := (others => 0);
+   end record with
+      Type_Invariant => Total_In_Range (Generator.Weights);
 
 end Categorical_Distribution;
