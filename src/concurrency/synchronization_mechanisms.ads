@@ -22,9 +22,9 @@
 --  application developer knows how many sections of code will require mutually
 --  exclusive access, i.e., how many mutex objects will be required.
 
---  All but the most trivial of the protected types and declarations are not in
---  the SPARK subset, and the package has disallowed dependencies, so SPARK_Mode
---  is Off rather than Auto.
+--  SPARK_Mode is not enabled on this package because Scope_Lock is outside the
+--  subset. Hence the mode is Auto. Therefore, except for that specific type,
+--  you can declare objects of these types in code that has SPARK_Mode enabled.
 
 with Ada.Finalization;
 with Ada.Task_Identification; use Ada.Task_Identification;
