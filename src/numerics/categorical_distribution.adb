@@ -5,6 +5,10 @@
 --
 --  Author: Patrick Rogers, progers@classwide.com
 
+with Ada.Streams;  use Ada.Streams;
+with Ada.Unchecked_Conversion;
+with System;
+
 package body Categorical_Distribution with SPARK_Mode is
 
    -----------------------
@@ -16,22 +20,24 @@ package body Categorical_Distribution with SPARK_Mode is
       --  The residual offset into the cumulative-weight buckets still to be
       --  crossed. It never underflows: it is decreased by Weights (V) only when
       --  Weights (V) <= Remaining.
+
+      Result : Category;
    begin
       for V in Category loop
          --  Remaining is still less than the weight remaining from V onward, so
-         --  a crossing bucket lies at or after V; in particular the guard below
-         --  must hold by the time V reaches Category'Last.
+         --  the crossing bucket lies at or after V; in particular the exit below
+         --  must be taken by the time V reaches Category'Last.
          pragma Loop_Invariant (To_Big_Integer (Remaining) < Mass_From (Weights, V));
 
-         if Weights (V) > Remaining then
-            return V;
-         end if;
+         Result := V;
+         exit when Weights (V) > Remaining;
          Remaining := Remaining - Weights (V);
       end loop;
 
-      --  Unreachable: at V = Category'Last the invariant gives
-      --  Remaining < Weights (Category'Last), so the guard returns above.
-      raise Program_Error;
+      --  The loop always exits via the guard (never by running past
+      --  Category'Last), so Result holds the crossing bucket, whose weight
+      --  exceeds the non-negative Remaining and is therefore positive.
+      return Result;
    end Selected_Category;
 
    ------------
@@ -44,17 +50,17 @@ package body Categorical_Distribution with SPARK_Mode is
       return Category
    with SPARK_Mode => Off
    is
+      use Ada.Numerics.Float_Random;
+
       Total   : constant Weight := Sum (This.Weights);
-      Scaled  : constant Long_Float :=
-        Long_Float (Ada.Numerics.Float_Random.Random (Source)) * Long_Float (Total);
+      Scaled  : constant Long_Float := Long_Float (Random (Source)) * Long_Float (Total);
       --  The draw is in the closed interval [0.0, 1.0]; scaling by Total spreads
       --  it across the cumulative weight range. Long_Float is used so that every
       --  Total value (up to Natural'Last) is exactly representable, keeping the
       --  conversion below within Natural's range.
 
       Floored : constant Long_Float := Long_Float'Floor (Scaled);
-
-      Index : Weight;
+      Index   : Weight;
    begin
       --  Floor yields a bucket index in 0 .. Total. Clamp the endpoint case (the
       --  draw returned exactly 1.0) down to the last valid index.
@@ -89,13 +95,15 @@ package body Categorical_Distribution with SPARK_Mode is
    -- Current_Weights --
    ---------------------
 
-   function Current_Weights (This : Generator) return Relative_Weights is (This.Weights);
+   function Current_Weights (This : Generator) return Relative_Weights is
+     (This.Weights);
 
    ------------------
    -- Total_Weight --
    ------------------
 
-   function Total_Weight (This : Generator) return Weight is (Sum (This.Weights));
+   function Total_Weight (This : Generator) return Weight is
+     (Sum (This.Weights));
 
    ---------
    -- Sum --
@@ -117,12 +125,17 @@ package body Categorical_Distribution with SPARK_Mode is
    ----------
 
    procedure Read
-      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
-       This   : out Generator)
+     (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
+      This   : out Generator)
    with SPARK_Mode => Off
    is
+      Item_Size : constant Ada.Streams.Stream_Element_Offset := Generator'Object_Size / Stream_Element'Size;
+      type SEA_Pointer is access all Ada.Streams.Stream_Element_Array (1 .. Item_Size);
+      function As_SEA_Pointer is new Ada.Unchecked_Conversion (System.Address, SEA_Pointer);
+      Last : Ada.Streams.Stream_Element_Offset;
    begin
-      Relative_Weights'Read (Stream, This.Weights);
+      --  Read the whole generator as one block, overlaying its storage.
+      Ada.Streams.Read (Stream.all, As_SEA_Pointer (This'Address).all, Last);
    end Read;
 
    -----------
@@ -130,12 +143,16 @@ package body Categorical_Distribution with SPARK_Mode is
    -----------
 
    procedure Write
-      (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
-       This   : Generator)
+     (Stream : not null access Ada.Streams.Root_Stream_Type'Class;
+      This   : Generator)
    with SPARK_Mode => Off
    is
+      Item_Size : constant Ada.Streams.Stream_Element_Offset := Generator'Object_Size / Stream_Element'Size;
+      type SEA_Pointer is access all Ada.Streams.Stream_Element_Array (1 .. Item_Size);
+      function As_SEA_Pointer is new Ada.Unchecked_Conversion (System.Address, SEA_Pointer);
    begin
-      Relative_Weights'Write (Stream, This.Weights);
+      --  Write the whole generator as one block, overlaying its storage.
+      Ada.Streams.Write (Stream.all, As_SEA_Pointer (This'Address).all);
    end Write;
 
 end Categorical_Distribution;
