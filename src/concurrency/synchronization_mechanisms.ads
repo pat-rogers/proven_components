@@ -30,9 +30,7 @@ with Ada.Finalization;
 with Ada.Task_Identification; use Ada.Task_Identification;
 with System;
 
-package Synchronization_Mechanisms with
-  SPARK_Mode => Off
-is
+package Synchronization_Mechanisms is
 
    Protocol_Error : exception;
    --  Raised when client tasks do not follow the protocol required by the

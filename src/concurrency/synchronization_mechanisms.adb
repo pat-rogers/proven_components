@@ -7,9 +7,7 @@
 
 with Ada.Dynamic_Priorities;     use Ada.Dynamic_Priorities;
 
-package body Synchronization_Mechanisms with
-  SPARK_Mode => Off
-is
+package body Synchronization_Mechanisms is
 
    ------------------------
    -- Counting_Semaphore --
