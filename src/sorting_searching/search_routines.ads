@@ -12,13 +12,8 @@
 --  checks at runtime (if present).
 
 --  However, for this specific generic package, enabling preconditions is
---  unrealistic because it will be too expensive for most cases and will
---  not cause an exception if not checked. Therefore, we make the function
---  Sorted_Ascending be a ghost routine and declare it here in this generic
---  package so we can use it as such. This usage is different from the sorting
---  facilities, for example, because there Sorted_Ascending is called in the
---  postconditions instead of the preconditions, and a sorting demo might want
---  to call it in a pragma Assert.
+--  unrealistic because it will be too expensive for most cases and in normal
+--  usage will not fail.
 
 generic
    type Item is limited private;
@@ -60,8 +55,7 @@ is
    function Sorted_Ascending (This : List) return Boolean is
      (for all I in This'Range =>
         (for all J in This'Range =>
-           (if I < J then not (This (J) < This (I)))))
-   with Ghost;
+           (if I < J then not (This (J) < This (I)))));
    --  True when no element of This is strictly less than an element that
    --  precedes it, i.e. This is in ascending order.
 
