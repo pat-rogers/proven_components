@@ -1,6 +1,8 @@
 --  This project file is for clients of the Proven Components library, that is,
 --  when using one or more of the components in client code.
 
+--  with "sparklib";     removed until sparklib 16 can be used (ie when gnat_arm_elf 16 is available)
+
 project Proven_Components is
 
    type Profile_Kind is ("full", "embedded");
@@ -19,7 +21,8 @@ project Proven_Components is
                               "src/proof_utils",
                               "src/random_numbers",
                               "src/signal_processing",
-                              "src/sorting_searching");
+                              "src/sorting_searching",
+                              "src/sparklib");
    end case;
 
    for Object_Dir use "obj/" & Profile;
