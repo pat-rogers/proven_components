@@ -12,6 +12,11 @@
 --  to disable preconditions. In general you should not disable precondition
 --  checks at runtime (if present).
 
+--  Required by the SPARKlib multiset instantiation below, whose contracts
+--  apply a Ghost function. The policy at the instantiation governs, so this
+--  cannot be stated in SPARKlib itself.
+pragma Assertion_Policy (Pre => Ignore, Type_Invariant => Ignore);
+
 with SPARK.Big_Integers;   use SPARK.Big_Integers;
 with SPARK.Containers.Functional.Multisets;
 
