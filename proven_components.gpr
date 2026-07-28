@@ -1,13 +1,28 @@
 --  This project file is for clients of the Proven Components library, that is,
 --  when using one or more of the components in client code.
 
-with "sparklib";
-
 project Proven_Components is
 
-   for Source_Dirs use ("src/**");
+   type Profile_Kind is ("full", "embedded");
+   Profile : Profile_Kind := external ("Proven_Components_Profile", "full");
 
-   for Object_Dir use "obj";
+   case Profile is
+      when "full" =>
+         for Source_Dirs use ("src/**");
+      when "embedded" =>  --  no concurrency/ for sake of Ravenscar/Jorvik Profile contexts
+         for Source_Dirs use ("src/containers",
+                              "src/control_systems",
+                              "src/images",
+                              "src/misc",
+                              "src/networking",
+                              "src/numerics",
+                              "src/proof_utils",
+                              "src/random_numbers",
+                              "src/signal_processing",
+                              "src/sorting_searching");
+   end case;
+
+   for Object_Dir use "obj/" & Profile;
 
    package Compiler is
       --  Note that "-gnata" is NOT included. Use the pragma Assertion_Policy on the
@@ -21,7 +36,6 @@ project Proven_Components is
          "-gnatn",     -- enable inlining across units
          "-ffunction-sections",
          "-fdata-sections",
-         "-gnateDSPARK_BODY_MODE=" & SPARKLIB.SPARK_Body_Mode,
          "-gnat2022"); -- required for compatibility with sparklib anyway
    end Compiler;
 
