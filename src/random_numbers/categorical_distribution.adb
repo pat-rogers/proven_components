@@ -50,28 +50,30 @@ package body Categorical_Distribution with SPARK_Mode is
       return Category
    with SPARK_Mode => Off
    is
-      use Ada.Numerics.Float_Random;
+   begin
+      return Selected (This, Ada.Numerics.Float_Random.Random (Source));
+   end Random;
 
+   --------------
+   -- Selected --
+   --------------
+
+   function Selected (This : Generator;  Draw : Uniformly_Distributed) return Category is
       Total   : constant Weight := Sum (This.Weights);
-      Scaled  : constant Long_Float := Long_Float (Random (Source)) * Long_Float (Total);
+      Scaled  : constant Long_Float := Long_Float (Draw) * Long_Float (Total);
       --  The draw is in the closed interval [0.0, 1.0]; scaling by Total spreads
       --  it across the cumulative weight range. Long_Float is used so that every
       --  Total value (up to Natural'Last) is exactly representable, keeping the
       --  conversion below within Natural's range.
 
       Floored : constant Long_Float := Long_Float'Floor (Scaled);
-      Index   : Weight;
-   begin
-      --  Floor yields a bucket index in 0 .. Total. Clamp the endpoint case (the
-      --  draw returned exactly 1.0) down to the last valid index.
-      if Floored >= Long_Float (Total) then
-         Index := Total - 1;
-      else
-         Index := Weight (Floored);
-      end if;
+      --  Floor yields a bucket index in 0 .. Total. The Min below clamps the
+      --  endpoint case (the draw returned exactly 1.0) to the last valid index.
 
+      Index : constant Weight := Weight'Min (Weight (Floored), Total - 1);
+   begin
       return Selected_Category (This.Weights, Index);
-   end Random;
+   end Selected;
 
    -----------------
    -- Set_Weights --
@@ -104,6 +106,24 @@ package body Categorical_Distribution with SPARK_Mode is
 
    function Total_Weight (This : Generator) return Weight is
      (Sum (This.Weights));
+
+   --------------------
+   -- Total_In_Range --
+   --------------------
+
+   function Total_In_Range (Weights : Relative_Weights) return Boolean is
+      Headroom : Weight := Weight'Last;
+   begin
+      for V in reverse Category loop
+         if Weights (V) > Headroom then
+            return False;
+         end if;
+         Headroom := Headroom - Weights (V);
+         --  Headroom is Weight'Last less the mass from V onward.
+         pragma Loop_Invariant (Mass_From (Weights, V) = To_Big_Integer (Weight'Last - Headroom));
+      end loop;
+      return True;
+   end Total_In_Range;
 
    ---------
    -- Sum --

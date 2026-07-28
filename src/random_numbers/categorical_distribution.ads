@@ -39,6 +39,8 @@ package Categorical_Distribution with SPARK_Mode is
    --  Each component is a relative weight for the corresponding index category,
    --  to be used when computing the random result.
 
+   subtype Uniformly_Distributed is Float range 0.0 .. 1.0;
+
    package Weight_Conversions is new Signed_Conversions (Int => Weight);
    use Weight_Conversions;
 
@@ -52,9 +54,8 @@ package Categorical_Distribution with SPARK_Mode is
    --  The total weight of Weights (From) .. Weights (Category'Last), as a
    --  Big_Integer so the total is expressed without any risk of overflow.
 
-   function Total_In_Range (Weights : Relative_Weights) return Boolean is
-     (Mass_From (Weights, Category'First) <= To_Big_Integer (Weight'Last))
-   with Ghost;
+   function Total_In_Range (Weights : Relative_Weights) return Boolean with
+     Post => Total_In_Range'Result = (Mass_From (Weights, Category'First) <= To_Big_Integer (Weight'Last));
    --  True when the sum of all the weights is representable as a Weight. Every
    --  Generator maintains this as a type invariant, so its total never
    --  overflows.
@@ -66,35 +67,49 @@ package Categorical_Distribution with SPARK_Mode is
    with
      Side_Effects,
      SPARK_Mode => Off,
-     Pre => Total_Weight (This) > 0;
+     Pre'Class  => Total_Weight (This) > 0;
    --  Returns a randomly determined category of type Category. The likelihood
    --  of a given category being returned is based on the weight assigned to
    --  that category, relative to all the other categories' weights. The sample
    --  is drawn from Source. Requires either Set_Weight or Set_Weights to have
    --  been called previously, with at least one weight a non-zero value such
-   --  that the total is non-zero at the time of the call.
+   --  that the total is non-zero at the time of the call. This function must
+   --  set SPARK_Mode to Off because that is the mode applied to all of
+   --  Ada.Numerics.Float_Random.
+
+   function Selected (This : Generator;  Draw : Uniformly_Distributed) return Category with
+     Pre'Class  => Total_Weight (This) > 0,
+     Post'Class => Current_Weights (This) (Selected'Result) > 0;
+   --  The proven kernel that (necessarily unproven) function Random calls.
+   --  Returns the category whose cumulative-weight bucket contains Draw, each
+   --  category's likelihood being proportional to its weight relative to the
+   --  total. Requires either Set_Weight or Set_Weights to have been called
+   --  previously, with a non-zero total at the time of the call. Note that
+   --  clients may call this routine directly if they already have some RNG
+   --  available, for example a hardware source.
 
    procedure Set_Weight (This : in out Generator;  Item : Category;  Value : Weight) with
-     Pre'Class => Total_In_Range ((Current_Weights (This) with delta Item => Value)),
-     Post => Current_Weights (This) (Item) = Value and then
-             (for all V in Category =>
-                (if V /= Item then Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
+     Pre'Class  => Total_In_Range ((Current_Weights (This) with delta Item => Value)),
+     Post'Class => Current_Weights (This) (Item) = Value and then
+                   (for all V in Category =>
+                      (if V /= Item then Current_Weights (This) (V) = Current_Weights (This)'Old (V)));
    --  Set a single weight for a single category. Individual weights can be zero.
    --  The precondition requires the resulting total to remain representable.
 
    procedure Set_Weights (This : out Generator;  Values : Relative_Weights) with
-     Pre'Class => Total_In_Range (Values),
-     Post => Current_Weights (This) = Values and then
-             Total_Weight (This) = Sum (Values);
+     Pre'Class  => Total_In_Range (Values),
+     Post'Class => Current_Weights (This) = Values and then
+                   Total_Weight (This) = Sum (Values);
    --  Sets all the relative weights for This. Individual weights can be zero.
    --  The precondition requires the total of Values to be representable.
 
-   function Current_Weights (This : Generator) return Relative_Weights;
+   function Current_Weights (This : Generator) return Relative_Weights with
+     Post'Class => Total_In_Range (Current_Weights'Result);
    --  Returns the current values for the relative weights assigned to This
    --  generator.
 
    function Total_Weight (This : Generator) return Weight with
-     Post => Total_Weight'Result = Sum (Current_Weights (This));
+     Post'Class => Total_Weight'Result = Sum (Current_Weights (This));
    --  Returns the sum of the current weights defined for this generator.
 
    function Sum (Weights : Relative_Weights) return Weight with
@@ -103,7 +118,8 @@ package Categorical_Distribution with SPARK_Mode is
    --  Computes the sum of the weights.
 
    function Selected_Category (Weights : Relative_Weights;  Index : Weight) return Category with
-     Pre  => To_Big_Integer (Index) < Mass_From (Weights, Category'First),
+     Pre  => Total_In_Range (Weights) and then
+             Index < Sum (Weights),
      Post => Weights (Selected_Category'Result) > 0;
    --  The proven selection kernel: returns the category whose cumulative-weight
    --  bucket contains Index. The precondition requires Index to lie below the
