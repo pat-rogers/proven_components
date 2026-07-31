@@ -18,5 +18,11 @@ tags = [
 "spark",
 "proof",
 ]
+
+[configuration]
+generate_c = false
+
+[configuration.variables]
+Profile ={type = "Enum", values = ["Full", "Embedded"], default = "Full"}
 # [[depends-on]]
 # sparklib = "^15.1.0"

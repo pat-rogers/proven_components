@@ -3,7 +3,7 @@
 --  components in client code.
 
 with "proven_components.gpr";
-with "sparklib";
+--  with "sparklib";
 
 project Proven_Components_Proof is
 
@@ -40,7 +40,6 @@ project Proven_Components_Proof is
          "-g",         -- enable debugging info
          "-O0",
          "-gnatf",     -- full errors
-         "-gnateDSPARK_BODY_MODE=" & SPARKLIB.SPARK_Body_Mode,  -- always leave this Off!
          "-gnat2022"); -- required for compatibility with sparklib
    end Compiler;
 

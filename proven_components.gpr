@@ -3,10 +3,11 @@
 
 --  with "sparklib";     removed until sparklib 16 can be used (ie when gnat_arm_elf 16 is available)
 
+with "config/proven_components_config.gpr";
+
 project Proven_Components is
 
-   type Profile_Kind is ("Full", "Embedded");
-   Profile : Profile_Kind := external ("Proven_Components_Profile", "Full");
+   Profile : Proven_Components_Config.Profile_Kind := Proven_Components_Config.Profile;
 
    case Profile is
       when "Full" =>
@@ -47,7 +48,10 @@ project Proven_Components is
    end Pretty_Printer;
 
    package Clean is
-      for Artifacts_In_Object_Dir use ("*.*");
+      --  Enumerated rather than "*.*": with some gprclean versions the root
+      --  project's pattern is applied to imported projects, and "*.*" then
+      --  deletes the Alire-generated config projects.
+      for Artifacts_In_Object_Dir use ("*.o", "*.ali", "*.json", "*.elf", "*.bin", "*.map", "map.txt");
    end Clean;
 
 end Proven_Components;
