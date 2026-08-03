@@ -1,81 +1,97 @@
 # Proven Components
 
-This project contains general purpose, reusable components written in SPARK or Ada. They are selected from a set of Ada components that I have created and used over the past few decades of Ada development (since 1980). I recently revised many of them for the sake of formal verification using SPARK. Hence they are both proven useful and proven formally as well.
+This project contains general purpose, reusable components written in SPARK or Ada. They are intended for both native and embedded applications.
+
+The units are selected from a set of Ada components that I have created and used over the past few decades of Ada development (since 1980). I recently revised many of them for the sake of formal verification using SPARK. Hence they are both proven useful and proven formally as well.
 
 All possible components have been verified to their highest possible level, usually to the Gold or Platinum level, i.e., the highest SPARK levels. All proven components are proven at least to the Silver level. 
 
-Not all compoennts are in the SPARK subset so they have not been proven.
+Some components are not in the SPARK subset. These components are not proven.
 
-Each proven component is proven to be free of run-time errors, including array indexing errors, numeric range errors, numeric overflow/underflow errors, reads of unassigned variables, unintended access to global data, and others.
+Because each proven component is at least at the Silver level, these components are proven to have no run-time errors. These errors include:
 
-In addition to those benefits, proof at the Gold level ensures that the provided operations implement their functional requirements at the unit level, obviating unit tests (or, if exercised, ensuring that the tests pass on their first attempt). Proof at the Platinum level is similar, except that the functional requirements are fully expressed for each unit (and proven).
+- Array index errors
+- Numeric range errors
+- Numeric overflow errors and underflow errors
+- Reads of variables that have no value
+- Access to global data when you do not want it
+- Other errors.
 
-For a detailed description of the proof levels and their benefits, see the SPARK User Guide, starting in the section at this URL:
+For full data about the proof levels and their results, refer to the SPARK User Guide. The applicable section is at this URL:
 https://docs.adacore.com/spark2014-docs/html/ug/en/usage_scenarios.html#levels-of-spark-use
 
-The subsection describing the Silver level is here:
+The subsection for the Silver level is here:
 https://docs.adacore.com/spark2014-docs/html/ug/en/usage_scenarios.html#silver-level-absence-of-run-time-errors-aorte
 
 ## The Components
 
-The components are located entirely in the src/ directory tree, grouped by functionality into subdirectories.
+All the components are in the src/ directory tree. Subdirectories group them by function.
 
 ### Unit Names
 
-The names of the generic packages, and hence their files' names, typically reflect specific characteristics of the components. For example:
+The names of the generic packages, and thus the names of their files, usually show specified properties of the components. For example:
 
-- whether objects of the type are thread-safe
-- whether objects of the type are bounded or unbounded in their memory usage
-- the general abstraction itself
+- Whether objects of the type are thread-safe
+- Whether objects of the type are bounded or unbounded in their memory usage
+- The general abstraction.
 
-Thread-safety is indicated by either "sequential" or "concurrent" appearing in the name. Memory usage is indicated by either "bounded" or "unbounded" appearing in the name.
+The unit name contains "sequential" or "concurrent" to show whether the component is thread-safe. It contains "bounded" or "unbounded" to show the memory usage.
 
-For example, the file named "sequential_bounded_buffers.ads" contains the generic package declaration for a buffer ADT. Objects of this type are not protected from concurrent access and are bounded in memory usage.
+For example, the file "sequential_bounded_buffers.ads" contains the generic package declaration for a buffer ADT. Objects of this type have no protection from concurrent access. They are also bounded in their memory usage.
 
-The names can contain other indicators, as needed. For example the name might
-include the word "discrete" to indicate that only discrete types are supported (via the generic formal type).
+The names can contain other indicators when necessary. For example, a generic package name can include "discrete". This shows that the component accepts only discrete types for the generic formal type.
 
 ### Proof Utility Components
 
-Some of the components are implemented with "utility" components that facilitate proof. These utility components are defined as reusable generics so that they can be used in new components requiring verification, including client-defined components. These generic packages are located in the "src/proof_utils/" subdirectory under the source directory containing the primary components. They are part of the project managed by "proven_components.gpr" and not the separate project used for invoking the provers on test instantiations.
+Some of the components use "utility" components that make proof easier. These utility components are generics that you can use again. Thus you can use them in new components where verification is necessary. This includes components that clients write. These generic packages are in the "src/proof_utils/" subdirectory, below the source directory that contains the primary components.
 
-For example, a common implementation idiom uses an array of Boolean components, in which each individual Boolean indicates something about the value corresponding to that array component's index. A specific example is the "Set" ADT that contains member values of some discrete type. The Boolean array is indexed by the discrete "member" type. Thus each component value indicates set membership, or lack thereof, for the corresponding member index value. One of the Set operations indicates how many members are currently held by a Set object. This corresponds to the total number of Boolean components that are currently True. Other operations will add or remove an individual member of a given set, incrementing or decrementing that total. Proof of the relationship between individual array component changes and the total involves induction, requiring lemmas. Therefore, the utility generic package Boolean_Array_Extent provides a function Extent indicating the number of True components, and lemma procedures facilitating proof of the incrementing and decrementing operations. New primary components may reuse this generic package, but new user-defined components can use it too.
+They are part of the project of "proven_components.gpr". They are not part of the different project that starts the provers on test instantiations.
+
+For example, a usual implementation idiom uses an array of Boolean components. Each Boolean shows something about the value that agrees with the index of that array component. A specified example is the "Set" ADT, which contains member values of some discrete type. The discrete "member" type indexes the Boolean array. Thus each component value shows if the applicable member index value is in the set, or is not in the set.
+
+One of the Set operations shows how many members a Set object holds at that time. This quantity is the total number of Boolean components that are True. Other operations add or remove one member of a given set, and increase or decrease that total. Proof of the relation between changes to one array component and the total uses induction, which is not possible without lemmas.
+
+Thus the utility generic package Boolean_Array_Extent supplies a function Extent. This function shows the number of True components. The package also supplies lemma procedures that make proof of the increase operations and the decrease operations easier. New primary components can use this generic package again. New components that users write can use it too.
 
 ## Using the Library
 
-Users specify the GNAT project file named "proven_components.gpr" in a with-clause in their projects. That will make the components available to their projects.  At the time of this writing nearly all of the components are generic units so clients are responsible for instantiating them.
+To make the components available to your project, specify the GNAT project file "proven_components.gpr" in a with-clause in that project. Most of the components are generic units. Thus clients must instantiate them.
 
-It is the only project file in the project root, and the only one intended for clients.
+"proven_components.gpr" is the only project file in the project root. It is also the only project file for clients.
 
 ### Client Compilation and Build
 
-When building a client project that references (via with-clause) "proven_components.gpr", the GNAT builder will build these components automatically. Note that the component's object files will go in the "obj" directory local to the Proven_Components project, rather than in client project object directories.
+When you build a client project that has a with-clause for "proven_components.gpr", the GNAT builder builds these components automatically. The object files of the components go in an object directory that is local to the Proven_Components project. They do not go in the object directories of client projects. That directory is "obj/Full" or "obj/Embedded", which agrees with the source "profile." Refer to the next section for the source profile.
 
-When building the components, the GNAT builder will apply the switches specified in the "proven_components.gpr" project file. These switches include optimization (at level O2) as well as those necessary for automatic removal of unused code and data at link-time.
+When the builder builds the components, it applies the switches in the "proven_components.gpr" project file. These switches include optimization at level O2. They also include the compiler switches that are necessary to remove code and data that is not used, automatically at link-time.
 
-Some of the components use Ada 2022 syntax so that corresponding switch is applied when the components are built.
+Some of the components use Ada 2022 syntax. Thus the builder always applies the corresponding switch when it builds the components.
 
 ### Selecting the Source Profile
 
-The crate declares a configuration variable named `Profile`, an enumeration with the values `Full` and `Embedded`. It selects which source directories "proven_components.gpr" compiles:
+The crate declares a configuration variable "Profile". This variable is an enumeration with the values `Full` and `Embedded`. It selects the source directories that "proven_components.gpr" compiles:
 
-- `Full` compiles everything under "src/".
-- `Embedded` compiles the same set less "src/concurrency/", which holds Event_Management, Synchronization_Mechanisms and Timed_Conditions.
+- `Full` compiles all the source below "src/".
+- `Embedded` compiles the same set, but not "src/concurrency/". 
 
-The variable exists because the GNAT builder compiles every source in a project's source directories, whether or not the client instantiates the units in them. The units in "src/concurrency/" use tasking constructs that the restricted tasking runtimes do not provide. A client building against a Ravenscar or Jorvik runtime, as on a bare-board embedded target, therefore cannot compile them, and so cannot build the library at all, even though it never references those units. Selecting `Embedded` drops them from the build. Nothing is lost by doing so, because a client on such a runtime could not have used them in any case.
+The variable is necessary because the GNAT builder compiles each source in the source directories of a project. The builder does this if the client instantiates the units in them or not. The units in "src/concurrency/" use tasking constructs that the restricted tasking runtimes do not supply. Thus a client that builds against a Ravenscar runtime or a Jorvik runtime cannot compile them, as on a bare-board embedded target. As a result, that client cannot build the library, although it does not reference those units.
 
-Alire clients set the value in their own manifest:
+If you select `Embedded`, the builder does not build those units. This causes no problem, because a client on such a runtime could not use them.
+
+Alire clients set the value in the manifest of the client:
 
 ```toml
 [configuration.values]
 proven_components.Profile = "Embedded"
 ```
 
-Note that this is a crate configuration variable rather than a gprbuild external, so its value reaches the project file through the Alire-generated "config/proven_components_config.gpr" rather than through a `-X` argument. Each profile has its own object directory, "obj/Full" or "obj/Embedded", so switching between them does not mix object files.
+"Profile" is a crate configuration variable, not a gprbuild external. Thus its value goes to the project file through "config/proven_components_config.gpr", which Alire makes, and not through a `-X` argument. Each profile has a different object directory, "obj/Full" or "obj/Embedded". Thus object files do not mix when you change from one profile to the other.
 
 ### Controlling Runtime Checks
 
-***Unless you prove clients too, you should not disable execution of preconditions at run-time***, because they are not just for proof, i.e., they are functional: they verify conditions required for well-defined behavior. The subprogram declarations include these preconditions so the bodies do not. For example, the body of procedure Pop in the stack ADT is as follows:
+***If you do not prove clients too, you must not disable the execution of preconditions at run-time.*** Preconditions are not only for proof. They are functional: they verify the conditions that are necessary for well-defined behavior. The subprogram declarations include these preconditions. Thus the bodies do not include them.
+
+For example, the body of procedure Pop in the stack ADT is as follows:
 
 ```ada
 procedure Pop (This : in out Stack; Item : out Element) is
@@ -85,7 +101,7 @@ begin
 end Pop;
 ```
 
-The declaration of procedure Pop includes a functional precondition verifying that the stack currently contains something to be removed, i.e., that it is not empty:
+The declaration of procedure Pop includes a functional precondition. This precondition verifies that the stack contains something to remove, that is, that the stack is not empty:
 
 ```ada
 procedure Pop (This : in out Stack;  Item : out Element) with
@@ -97,18 +113,20 @@ procedure Pop (This : in out Stack;  Item : out Element) with
   Global => null;
 ```
 
-Specifically, function Empty checks whether `This.Top` is zero, thus whether `This.Top` is a valid index. Hence prior evaluation of the expression `not Empty (This)` must occur for safe execution of the body. (The precondition is also required for proof of the body, but that is beside the point.) 
+Function Empty examines whether`This.Top` is zero, and thus whether `This.Top` is a correct index. Thus the program must evaluate the expression `not Empty (This)` before the body executes safely. The precondition is also necessary for proof of the body, but that is a different point.
 
-Note that other forms of assertion are also worth enabling, such as dynamic predicates.
+It is also good to enable other kinds of assertion, for example predicates.
 
-A convenient approach to ensuring that these assertions are executed at run-time is to apply the "-gnata" switch that enables *all* assertions. However, this switch can result in a conflict in SPARK code, causing the compilation to be rejected. The issue is ghost code, code that we almost always want **not** to be executed. (It tends to be expensive, although not necessarily so, but then why mark it as Ghost if we want it to be executed?) Specifically, if we use the compiler switch "-gnata" to enable all assertions, but we also specify to the compiler that we want ghost code ignored, those policy choices conflict *if the assertions contain references to ghost code*. The compiler will then reject the compilation unit. Both pragma Assert and Loop_Invariant are typically involved, as both are assertions that often reference ghost code.
+The "-gnata" switch is a tempting method to make sure that these assertions execute at run-time, because it enables *all* assertions. But this switch can cause the compiler to reject the compilation. The problem is "ghost code,"  which we almost always do not want to execute. Ghost code is used for proof and is often prohibitively expensive, although not necessarily. But by definition it is not functional code.
 
-In such cases you can instead apply pragma Assertion_Policy so that you can individually control which assertions are enabled and which are disabled. For example, you could apply the following to an instantiation:
+Therefore, the problem is that we want some kinds of assertion executed, especially preconditions, but not ghost code. These two policy choices do not agree if the enabled assertions reference ghost code. The compiler then rejects the compilation unit. The two pragmas Assert and Loop_Invariant frequently reference ghost code, but preconditions may contain ghost code too. Some of the components in the SPARKLib crate do. The proof for one of the components in Proven_Components calls such a SPARK component, causing the compiler to reject the compilation.
+
+In these conditions, you can apply pragma Assertion_Policy as an alternative to the compiler switch. Then you can control which assertions are enabled and which are disabled, one at a time. For example, you can apply this pragma to an instantiation:
 
 ```ada
 pragma Assertion_Policy (Pre                       => Check,
                          Pre'Class                 => Check,
-                         Static_Predicate          => Ignore,
+                         Static_Predicate          => Check,
                          Dynamic_Predicate         => Check,
                          Type_Invariant            => Check,
                          Type_Invariant'Class      => Check,
@@ -119,42 +137,52 @@ pragma Assertion_Policy (Pre                       => Check,
                          Post'Class                => Ignore);
 ```
 
-In the above, the assertions that verify conditions required for well-defined behavior are enabled: Pre, Pre'Class, Dynamic_Predicate, Type_Invariant and Type_Invariant'Class. Static_Predicate is disabled because it is checked at compile-time, unless the corresponding code is dealing with values coming from external sources. (In that case, the code should use 'Valid anyway.) The remainder are disabled: Ghost, so that ghost code is not executed, together with Assert, Post, Post'Class and Default_Initial_Condition, which are worth enabling during development but are not required for execution to be safe. Ignoring Assert alongside Ghost is what keeps those two policies from conflicting, since pragma Assert and Loop_Invariant are the assertions that most often reference ghost entities.
+In the example above, the assertions that verify conditions necessary for well-defined behavior are enabled. These assertions are `Pre`, `Pre'Class`, `Dynamic_Predicate`, `Type_Invariant` and `Type_Invariant'Class`. (Note that additional kinds of checks may be specified.)
 
-The above is just a suggestion. The point is that clients can disable specific checks that contain ghost code so that the policies will not conflict. Typically, preconditions are the assertions that conflict with disabled ghost code, and as a result, a good general design rule is that preconditions should not contain ghost code if avoidable. Currently all the components follow that rule, but that's not guaranteed. Some components' routines do not have preconditions, so there's no potential precondition-ghost issue for them.
+The other assertions are disabled in the above. Ghost is disabled to make sure that ghost code does not execute. Assert, Post, Post'Class and Default_Initial_Condition are also disabled. It is good to enable these four during development, but they are not necessary for safe execution. 
 
-Alternatively, clients can place pragma Assertion_Policy in a project's "configuration pragmas" file so that it would apply automatically and globally to the associated project. For the details of how to do that with GNAT, see [The Configuration Pragmas Files](https://gcc.gnu.org/onlinedocs/gnat_ugn/The-Configuration-Pragmas-Files.html) in the GNAT User's Guide for Native Platforms. Note, however, that this global approach is probably not universally appropriate so the Assertion_Policy pragma is the recommended approach.
+We recommend the example above, but it is only an example. The important point is that clients can disable specified checks that contain ghost code. Then the policies agree.
 
-Be aware of one limit on where the pragma can go: for a library of generics, the policy that decides whether a ghost reference is legal is the one in effect at the outermost non-generic instantiation site. Placing pragma Assertion_Policy inside the generic that owns the contract has no effect, and neither does placing it in an enclosing generic that instantiates that one. Only the non-generic client's pragma governs.
+A good general design rule is that preconditions must not contain ghost code if you can prevent it. All the components obey that design rule at this time, but this can change. Some routines of components have no preconditions. Thus for those routines, the policy for a precondition and the policy for ghost code always agree.
+
+As an alternative, clients can put pragma Assertion_Policy in the "configuration pragmas" file of a project. Then it applies automatically. For details about how to do this with GNAT, refer to [The Configuration Pragmas Files](https://gcc.gnu.org/onlinedocs/gnat_ugn/The-Configuration-Pragmas-Files.html) in the GNAT User's Guide for Native Platforms. But this method for all of a project is possibly not applicable in all conditions. Pragma Assertion_Policy on individual files is the the most general method.
+
+There is one limit on where you can put the pragma. For a library of generics, one policy controls if a ghost reference is legal. It is the policy in effect at the outermost non-generic instantiation site. If you put pragma Assertion_Policy in the generic that contains the contract, it has no effect. Only the pragma on the instantiation controls this.
 
 ## Project Dependencies
 
-This project uses SPARKlib for the sake of proving some of the components, but it does not currently depend on the SPARKlib crate. The with-clause for "sparklib.gpr" in "proven_components.gpr" is commented out for the time being, and a hand-picked 13-file subset of SPARKlib 15.1.0 is vendored in "src/sparklib/" instead. Clients therefore need no SPARKlib of their own, and are not expected to reference "sparklib.gpr" themselves.
+This project uses SPARKlib to prove some of the components. But at this time it does not use the SPARKlib crate as a dependency. The with-clause for "sparklib.gpr" in "proven_components.gpr" is not active at this time. A subset of 13 files from SPARKlib 15.1.0, which I selected, is copied into "src/sparklib/" as an alternative. Thus a SPARKlib of their own is not necessary for clients, and a reference to "sparklib.gpr" is also not necessary.
 
-SPARKlib can otherwise be obtained from GitHub or as a crate in Alire. Note also that the `gnatprove` tool includes SPARKlib.
+### The Cause of the Local Copy of the SPARKlib Sources
 
-### Why the SPARKlib sources are vendored
+Two different problems made the local copy necessary. It is a workaround, not a design decision.
 
-Two separate problems forced the local copy. It is a workaround rather than a design choice.
+**The crate could not be cross-compiled.** SPARKlib 16.x declares `depends-on gnat >= 16`. On 2026-08-03, each cross-compiler crate in the Alire community index has a version that is too low: `gnat_arm_elf` stops at 15.3.1, and only `gnat_native` has version 16.1.0. This is more than a solver constraint that a version override can correct. The SPARKlib 16 sources use pragma Assertion_Level, which is a GNAT 16 feature. Thus if you specify that version, the problem only moves into the compiler.
 
-**The crate could not be cross-compiled.** SPARKlib 16.x declares `depends-on gnat >= 16`, and at the time of this writing every cross-compiler crate in the Alire community index is too old, only `gnat_native` has reached 16.1.0. This is not merely a solver constraint that a version override could defeat: the SPARKlib 16 sources use pragma Assertion_Level, a GNAT 16 feature, so forcing the version simply moves the failure into the compiler. Any embedded client of these components is thus shut out of SPARKlib 16 for as long as that gap persists.
+As a result, each embedded client of these components cannot use SPARKlib 16 while that gap continues.
 
-**SPARKlib 15 conflicts with the assertion policy recommended above.** SPARK.Containers.Functional.Multisets applies the Ghost function Invariant in two Type_Invariant aspects, and in preconditions on several subprograms local to its body. A client that enables Pre and Type_Invariant while ignoring Ghost is rejected with "incompatible ghost policies in effect". As described under Controlling Runtime Checks, the deciding policy is the one at the outermost non-generic instantiation, so this cannot be repaired inside SPARKlib, nor inside any generic that uses it. The vendored copy carries a `pragma Assertion_Policy (Pre => Ignore, Type_Invariant => Ignore);` at the top of the affected spec and body, and the same pragma appears at the three instantiation sites in "src/proof_utils/permutation_utils.ads", "src/proof_utils/sorting_proof_utils.ads" and "src/sorting_searching/sort_routines.ads". Neither half of that arrangement works without the other.
+**SPARKlib 15 does not agree with the assertion policy recommended above.** `SPARK.Containers.Functional.Multisets` applies the Ghost function Invariant in two Type_Invariant aspects. It also applies that function in preconditions on some subprograms that are local to its body. A client that enables Pre and Type_Invariant, but ignores Ghost, is rejected with "incompatible ghost policies in effect". The section Controlling Runtime Checks gives the policy that controls this. It is the policy at the outermost non-generic instantiation. Thus you cannot repair this in SPARKlib, or in a generic that uses SPARKlib.
 
-Vendoring the closure rather than the whole library keeps the cost down: the 13 files are entered through SPARK.Big_Integers and SPARK.Containers.Functional.Multisets alone.
+The local copy has `pragma Assertion_Policy (Pre => Ignore, Type_Invariant => Ignore);` at the top of the applicable spec and body. The same pragma is at the three instantiation sites in "src/proof_utils/permutation_utils.ads", "src/proof_utils/sorting_proof_utils.ads" and "src/sorting_searching/sort_routines.ads". The two parts do not operate without each other.
+
+The closure is copied, and not the full library, to keep the cost low. Only `SPARK.Big_Integers` and `SPARK.Containers.Functional.Multisets` are the entry points to the 13 files.
+
+The copy is not the same as the source. Together with the assertion policy pragma above, the multisets body contains one `#if SPARK_BODY_MODE` directive. I changed that directive to `with SPARK_Mode => Off` on the package body. Thus the preprocessing step of the SPARKlib crate is not necessary for these sources. A `-gnateDSPARK_BODY_MODE` switch is also not necessary.
 
 ### The plan for SPARKlib 16
 
-SPARKlib 16 removes the second problem outright. It ties both sides of the ghost question to a named assertion level, `Ghost => SPARKlib_Full` on the declaration and `Type_Invariant => (SPARKlib_Full => Invariant (...))` on the use, so a client's blanket `Ghost => Ignore` can no longer produce a declaration/use mismatch. The nested-instantiation test that fails against 15.1.0 compiles clean against 16.1.0 with no pragmas anywhere.
+SPARKlib 16 removes the second problem fully. It connects the two sides of the ghost problem to a named assertion level. It applies `Ghost => SPARKlib_Full` to the declaration, and `Type_Invariant => (SPARKlib_Full => Invariant (...))` to the use. Thus a general `Ghost => Ignore` from a client can no longer cause a mismatch between the declaration and the use. 
 
-The precondition for migrating is a `gnat_arm_elf` at version 16 or later in the Alire index; check with `alr search gnat_arm_elf --full`. Once one exists, "src/sparklib/" is deleted in its entirety, the three local pragmas listed above are removed, and the SPARKlib dependency is restored in both "alire.toml" and "proven_components.gpr".
+Proven_Components are intended for both native compilation and cross-compilation. However, SPARKlib 16 requires a cross-compiler at version 16, or a subsequent version, in the Alire index. We expect to move to SPRKlib 16 as soon as possible.
 
-The full checklist, the evidence behind both problems, and an 18-case regression suite are kept in "SPARKLIB_16_MIGRATION.md" and "ghost_policy_tests/".
+## More Project Files and Source Directories
 
-## Additional Project File and Source Directories
+There is a second GNAT project file, "proof/proven_components_proof.gpr", together with the project file of the components. Developers use it to prove the components during development. Its primary artifact is one more source directory, "proof/src", which contains instantiations of the components. The SPARK provers (gnatprove) examine these instantiations, because they cannot examine or prove generic units directly. Only this project file references that source folder.
 
-In addition to the component's project file, a second GNAT project file, "proof/proven_components_proof.gpr", is used for proving the components during development. Its primary artifact is an additional source directory, "proof/src", containing instantiations of the components. It is these instantiations that are submitted to the SPARK (gnatprove) provers, because generic units cannot be examined or proven directly, at least not with the current version of gnatprove. Only this project file references that source folder. Users of the library are not intended to use this GNAT project file, but there is no harm in doing so if you want to run gnatprove yourself on the components.
+This GNAT project file is not for users of the library. But you can use it if you want to start gnatprove on the components.
 
-The "proof/src" directory also contains simple demonstration main programs. You can build and run these programs, and typically you can prove them too. The "MAIN" scenario variable controls which demo main procedure is built, defaulting to "demo_buffers", assuming that you are using the "proven_components_proof.gpr" project file to build or run GNAT Studio. Unlike `Profile`, this one is a genuine gprbuild external, so it is set on the command line, for example `-XMAIN=demo_sorts`.
+The "proof/src" directory also contains simple demonstration main programs. You can build these programs and then start them. Usually you can prove them too. The "MAIN" scenario variable controls which demonstration main procedure the builder builds. It defaults to "demo_buffers", if you use the "proven_components_proof.gpr" project file to build or to start GNAT Studio.
 
-Finally, "proof/obj" is used for compiling and proving that code, distinct from the object directory that clients indirectly reference.
+`MAIN` is a correct gprbuild external, which is not the same as `Profile`. Thus you set it on the command line, for example `-XMAIN=demo_sorts`.
+
+Last, the builder uses "proof/obj" to compile and to prove that code. This directory is distinct from the object directory that clients reference through the project file.
