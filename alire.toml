@@ -40,6 +40,11 @@ tags = [
 generate_c = false
 
 [configuration.variables]
-Profile ={type = "Enum", values = ["Full", "Embedded"], default = "Full"}
+Profile = {type = "Enum", values = ["Full", "Embedded"], default = "Full"}
+
+# To be restored when a cross-compiler at 16 or later reaches the Alire index.
 # [[depends-on]]
-# sparklib = "^15.1.0"
+# sparklib = "^16.1.0"
+#
+# [gpr-set-externals]
+# SPARKLIB_BUILD = "Production"
