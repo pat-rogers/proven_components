@@ -47,7 +47,7 @@ Some of the components use "utility" components that make proof easier. These ut
 
 They are part of the project of "proven_components.gpr". They are not part of the different project that starts the provers on test instantiations.
 
-For example, a usual implementation idiom uses an array of Boolean components. Each Boolean shows something about the value that agrees with the index of that array component. A specified example is the "Set" ADT, which contains member values of some discrete type. The discrete "member" type indexes the Boolean array. Thus each component value shows if the applicable member index value is in the set, or is not in the set.
+For example, a usual implementation idiom uses an array of Boolean components. Each Boolean shows something about the value that agrees with the index of that array component. A specified example is the "Set" ADT, which contains member values of some discrete type. The discrete "member" type indexes the Boolean array. Thus each component value shows whether the applicable member index value is in the set, or is not in the set.
 
 One of the Set operations shows how many members a Set object holds at that time. This quantity is the total number of Boolean components that are True. Other operations add or remove one member of a given set, and increase or decrease that total. Proof of the relation between changes to one array component and the total uses induction, which is not possible without lemmas.
 
@@ -74,7 +74,7 @@ The crate declares a configuration variable "Profile". This variable is an enume
 - `Full` compiles all the source below "src/".
 - `Embedded` compiles the same set, but not "src/concurrency/". 
 
-The variable is necessary because the GNAT builder compiles each source in the source directories of a project. The builder does this if the client instantiates the units in them or not. The units in "src/concurrency/" use tasking constructs that the restricted tasking runtimes do not supply. Thus a client that builds against a Ravenscar runtime or a Jorvik runtime cannot compile them, as on a bare-board embedded target. As a result, that client cannot build the library, although it does not reference those units.
+The variable is necessary because the GNAT builder compiles each source in the source directories of a project. The builder does this whether the client instantiates the units in them or not. The units in "src/concurrency/" use tasking constructs that the restricted tasking runtimes do not supply. Thus a client that builds against a Ravenscar runtime or a Jorvik runtime cannot compile them, as on a bare-board embedded target. As a result, that client cannot build the library, although it does not reference those units.
 
 If you select `Embedded`, the builder does not build those units. This causes no problem, because a client on such a runtime could not use them.
 

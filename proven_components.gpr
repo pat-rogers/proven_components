@@ -1,7 +1,7 @@
 --  This project file is for clients of the Proven Components library, that is,
 --  when using one or more of the components in client code.
 
---  with "sparklib";     removed until sparklib 16 can be used (ie when gnat_arm_elf 16 is available)
+--  with "sparklib";     removed until sparklib 16 can be used (when cross-compilers at 16 are available)
 
 with "config/proven_components_config.gpr";
 
