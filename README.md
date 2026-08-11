@@ -61,7 +61,7 @@ To make the components available to your project, specify the GNAT project file 
 
 ### Client Compilation and Build
 
-When you build a client project that has a with-clause for "proven_components.gpr", the GNAT builder builds these components automatically. The object files of the components go in an object directory that is local to the Proven_Components project. They do not go in the object directories of client projects. That directory is "obj/Full" or "obj/Embedded", which agrees with the source "profile." Refer to the next section for the source profile.
+When you build a client project that has a with-clause for "proven_components.gpr", the GNAT builder builds these components automatically. The object files of the components go in an object directory that is local to the Proven_Components project. They do not go in the object directories of client projects. That directory is "obj/Full", "obj/Embedded", or "obj/Light", which agrees with the source "profile." Refer to the next section for the source profile.
 
 When the builder builds the components, it applies the switches in the "proven_components.gpr" project file. These switches include optimization at level O2. They also include the compiler switches that are necessary to remove code and data that is not used, automatically at link-time.
 
@@ -69,14 +69,24 @@ Some of the components use Ada 2022 syntax. Thus the builder always applies the 
 
 ### Selecting the Source Profile
 
-The crate declares a configuration variable "Profile". This variable is an enumeration with the values `Full` and `Embedded`. It selects the source directories that "proven_components.gpr" compiles:
+The crate declares a configuration variable "Profile". This variable is an enumeration with the values `Full`, `Embedded`, and `Light`. It selects the source directories that "proven_components.gpr" compiles:
 
 - `Full` compiles all the source below "src/".
 - `Embedded` compiles the same set, but not "src/concurrency/". 
+- `Light` compiles the `Embedded` set, but not the components that require library units which a runtime below the embedded level does not supply.
 
 The variable is necessary because the GNAT builder compiles each source in the source directories of a project. The builder does this whether the client instantiates the units in them or not. The units in "src/concurrency/" use tasking constructs that the restricted tasking runtimes do not supply. Thus a client that builds against a Ravenscar runtime or a Jorvik runtime cannot compile them, as on a bare-board embedded target. As a result, that client cannot build the library, although it does not reference those units.
 
 If you select `Embedded`, the builder does not build those units. This causes no problem, because a client on such a runtime could not use them.
+
+The `Light` profile applies to a client that builds against a light runtime or a light-tasking runtime. Such a runtime does not supply Ada.Calendar, Ada.Streams, Ada.Containers, Ada.Finalization, Ada.Numerics.Float_Random, Ada.Numerics.Generic_Real_Arrays, or Ada.Numerics.Big_Numbers.Big_Integers. The `Light` profile removes the components that require those units:
+
+- the three random number generators in "src/random_numbers/".
+- Kalman_Filters_Linear in "src/numerics/".
+- Time_Stamps in "src/images/".
+- Sort_Routines in "src/sorting_searching/", with Permutation_Utils and Sorting_Proof_Utils in "src/proof_utils/" and the SPARKlib subset in "src/sparklib/".
+
+Five of those directories hold components that a light runtime does compile: Math_Utilities and Machine_Unsigned_Types, Fixed_Point_Images and Floating_Point_Images, Search_Routines, Boolean_Array_Extent and Boolean_Array_Iteration. "proven_components.gpr" keeps those directories in the source directory list, and removes the other units one by one with the Excluded_Source_Files attribute. The runtime does not change the proof results. The instantiations in "proof/src/" that this profile compiles prove against a light runtime with the same results as against the embedded runtime.
 
 Alire clients set the value in the manifest of the client:
 
@@ -85,7 +95,7 @@ Alire clients set the value in the manifest of the client:
 proven_components.Profile = "Embedded"
 ```
 
-"Profile" is a crate configuration variable, not a gprbuild external. Thus its value goes to the project file through "config/proven_components_config.gpr", which Alire makes, and not through a `-X` argument. Each profile has a different object directory, "obj/Full" or "obj/Embedded". Thus object files do not mix when you change from one profile to the other.
+"Profile" is a crate configuration variable, not a gprbuild external. Thus its value goes to the project file through "config/proven_components_config.gpr", which Alire makes, and not through a `-X` argument. Each profile has a different object directory, "obj/Full", "obj/Embedded", or "obj/Light". Thus object files do not mix when you change from one profile to another.
 
 ### Controlling Runtime Checks
 

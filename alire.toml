@@ -1,5 +1,5 @@
 name = "proven_components"
-version = "1.2.0"
+version = "1.3.0"
 description = "Reusable components in SPARK/Ada developed since 1980."
 
 long-description = """
@@ -40,7 +40,7 @@ tags = [
 generate_c = false
 
 [configuration.variables]
-Profile = {type = "Enum", values = ["Full", "Embedded"], default = "Full"}
+Profile = {type = "Enum", values = ["Full", "Embedded", "Light"], default = "Full"}
 
 # To be restored when a cross-compiler at 16 or later reaches the Alire index.
 # [[depends-on]]

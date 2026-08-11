@@ -24,6 +24,28 @@ project Proven_Components is
                               "src/signal_processing",
                               "src/sorting_searching",
                               "src/sparklib");
+      when "Light" =>  --  Embedded, less what a runtime below "embedded" cannot supply
+         for Source_Dirs use ("src/containers",
+                              "src/control_systems",
+                              "src/images",
+                              "src/misc",
+                              "src/networking",
+                              "src/numerics",
+                              "src/proof_utils",
+                              "src/signal_processing",
+                              "src/sorting_searching");
+
+         --  Five of those directories are mixed: each holds units that a light runtime
+         --  compiles and units that need the embedded one. Omitting a whole directory
+         --  instead would remove Math_Utilities, the two image generics, Search_Routines
+         --  and the two Boolean_Array generics, all of which compile and prove at light.
+         --  Math_Utilities is not optional here: Recursive_Moving_Average_Filters uses it.
+         for Excluded_Source_Files use
+           ("kalman_filters_linear.ads", "kalman_filters_linear.adb",  -- Ada.Numerics.Generic_Real_Arrays
+            "time_stamps.ads",           "time_stamps.adb",            -- Ada.Calendar
+            "permutation_utils.ads",     "permutation_utils.adb",      -- SPARKlib, so Ada.Containers
+            "sorting_proof_utils.ads",   "sorting_proof_utils.adb",    -- SPARKlib, so Ada.Containers
+            "sort_routines.ads",         "sort_routines.adb");         -- SPARKlib, so Ada.Containers
    end case;
 
    for Object_Dir use "obj/" & Profile;
