@@ -4,6 +4,19 @@ This project contains general purpose, reusable components written in SPARK or A
 
 The units are selected from a set of Ada components that I have created and used over the past few decades of Ada development (since 1980). I recently revised many of them for the sake of formal verification using SPARK. Hence they are both proven useful and proven formally as well.
 
+Sample contents:
+
+- Sequential Bounded Buffers
+- Sequential Bounded Stacks (i.e., not thread-safe)
+- ...
+- Protected types providing synchronization protocols
+- PI and PID Controls
+- Image functions for floating- and fixed-point types, in standard (i.e., not scientific) notation
+- Gaussian, Categorical, and Scaled Uniform Random Number Generators
+- Recursive Moving Average (RMA) filters for signal processing
+- Sorting and Searching routines
+- ...
+
 All possible components have been verified to their highest possible level, usually to the Gold or Platinum level, i.e., the highest SPARK levels. All proven components are proven at least to the Silver level. 
 
 Some components are not in the SPARK subset. These components are not proven.
