@@ -8,16 +8,17 @@ Most are proven to the Gold or Platinum level, but when necessary they are prove
 They have been used in both host and embedded projects, many professional and a few for fun.
 
 Sample contents:
-  Sequential Bounded Buffers
-  Sequential Bounded Stacks (i.e., not thread-safe)
-  ...
-  Protected types providing synchronization protocols
-  PI and PID Controls
-  Image functions for floating- and fixed-point types, in standard (i.e., not scientific) notation
-  Gaussian, Categorical, and Scaled Uniform Random Number Generators
-  Recursive Moving Average (RMA) filters for signal processing
-  Sorting and Searching routines
-  ...
+
+- Sequential Bounded Buffers
+- Sequential Bounded Stacks (i.e., not thread-safe)
+- ...
+- Protected types providing synchronization protocols
+- PI and PID Controls
+- Image functions for floating- and fixed-point types, in standard (i.e., not scientific) notation
+- Gaussian, Categorical, and Scaled Uniform Random Number Generators
+- Recursive Moving Average (RMA) filters for signal processing
+- Sorting and Searching routines
+- ...
 """
 licenses = "Apache-2.0 WITH LLVM-exception"
 authors = ["Pat Rogers"]
