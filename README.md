@@ -99,7 +99,7 @@ The `Light` profile applies to a client that builds against a light runtime or a
 - Time_Stamps in "src/images/".
 - Sort_Routines in "src/sorting_searching/", with Permutation_Utils and Sorting_Proof_Utils in "src/proof_utils/" and the SPARKlib subset in "src/sparklib/".
 
-Five of those directories hold components that a light runtime does compile: Math_Utilities and Machine_Unsigned_Types, Fixed_Point_Images and Floating_Point_Images, Search_Routines, Boolean_Array_Extent and Boolean_Array_Iteration. "proven_components.gpr" keeps those directories in the source directory list, and removes the other units one by one with the Excluded_Source_Files attribute. The runtime does not change the proof results. The instantiations in "proof/src/" that this profile compiles prove against a light runtime with the same results as against the embedded runtime.
+Five of those directories are mixed: each holds components that a light runtime does compile alongside the components removed above. "proven_components.gpr" therefore keeps those directories in the source directory list, and removes the other units one by one with the Excluded_Source_Files attribute, which is the definitive list. The runtime does not change the proof results. The instantiations in "proof/src/" that this profile compiles prove against a light runtime with the same results as against the embedded runtime.
 
 Alire clients set the value in the manifest of the client:
 

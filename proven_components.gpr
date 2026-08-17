@@ -37,8 +37,8 @@ project Proven_Components is
 
          --  Five of those directories are mixed: each holds units that a light runtime
          --  compiles and units that need the embedded one. Omitting a whole directory
-         --  instead would remove Math_Utilities, the two image generics, Search_Routines
-         --  and the two Boolean_Array generics, all of which compile and prove at light.
+         --  instead would remove units that a light runtime does compile, and prove
+         --  where they are in SPARK, so the rest are excluded individually below.
          --  Math_Utilities is not optional here: Recursive_Moving_Average_Filters uses it.
          for Excluded_Source_Files use
            ("kalman_filters_linear.ads", "kalman_filters_linear.adb",  -- Ada.Numerics.Generic_Real_Arrays
